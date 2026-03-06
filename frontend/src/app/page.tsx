@@ -1,0 +1,564 @@
+"use client";
+
+import { ConnectWallet } from "@/components/ConnectWallet";
+import { Chat } from "@/components/Chat";
+import { useAccount } from "wagmi";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { polkadotHubTestnet } from "@/lib/wagmi";
+
+/* ── Scroll Animation Hook ─────────────────────────────── */
+function useScrollAnimation(active: boolean) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!active) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("animate-in");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    const elements = container.querySelectorAll(".animate-on-scroll");
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [active]);
+
+  return containerRef;
+}
+
+/* ── Feature Icon SVGs ──────────────────────────────────── */
+function FeatureIcon({ name }: { name: string }) {
+  const icons: Record<string, React.ReactNode> = {
+    chat: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+      </svg>
+    ),
+    shield: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+      </svg>
+    ),
+    send: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+      </svg>
+    ),
+    sparkle: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+      </svg>
+    ),
+    lock: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+      </svg>
+    ),
+    cursor: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59" />
+      </svg>
+    ),
+  };
+  return <>{icons[name]}</>;
+}
+
+/* ── Feature Data ───────────────────────────────────────── */
+const features = [
+  { icon: "chat", title: "Natural Language DeFi", desc: "Type what you want in plain English. Our AI understands your intent and builds the perfect transaction.", borderColor: "border-polkadot-pink/30", bgColor: "bg-polkadot-pink/10", textColor: "text-polkadot-pink" },
+  { icon: "shield", title: "AI Risk Guardian", desc: "Every transaction is scored for risk. Slippage, liquidity depth, and pool drain are evaluated before you confirm.", borderColor: "border-polkadot-green/30", bgColor: "bg-polkadot-green/10", textColor: "text-polkadot-green" },
+  { icon: "send", title: "Token Transfers", desc: "Send tokens to any address with a simple command. Whitelist-protected for safety.", borderColor: "border-polkadot-cyan/30", bgColor: "bg-polkadot-cyan/10", textColor: "text-polkadot-cyan" },
+  { icon: "sparkle", title: "Token Factory", desc: "Create your own ERC-20 token in seconds. Just describe the name, symbol, and supply.", borderColor: "border-polkadot-purple/30", bgColor: "bg-polkadot-purple/10", textColor: "text-polkadot-purple" },
+  { icon: "lock", title: "On-Chain Whitelist", desc: "Only whitelisted tokens can be traded or transferred. Owner-controlled security layer.", borderColor: "border-yellow-500/30", bgColor: "bg-yellow-500/10", textColor: "text-yellow-400" },
+  { icon: "cursor", title: "One-Click Execution", desc: "Preview the full transaction, check the risk score, then execute with a single click.", borderColor: "border-polkadot-pink/30", bgColor: "bg-polkadot-pink/10", textColor: "text-polkadot-pink" },
+];
+
+/* ── Steps Data ─────────────────────────────────────────── */
+const steps = [
+  { num: "01", title: "Describe Your Intent", desc: "Type naturally: \"Swap 100 DOT for USDT\" or \"Send 50 USDC to 0xabc...\"" },
+  { num: "02", title: "AI Reviews & Scores", desc: "Risk Guardian evaluates slippage, liquidity, and pool health. You see a GREEN / YELLOW / RED score." },
+  { num: "03", title: "One-Click Execute", desc: "Preview the full transaction details, confirm with one click, and watch it execute on-chain." },
+];
+
+/* ── Roadmap Data ───────────────────────────────────────── */
+const roadmapPhases = [
+  {
+    phase: "v2",
+    label: "Next Up",
+    badgeColor: "border-polkadot-green/30 bg-polkadot-green/10 text-polkadot-green",
+    items: [
+      { text: "EIP-7702 Smooth Mode", desc: "Zero-popup trading — sign once, trade forever", icon: "⚡" },
+      { text: "NFT Buying & Selling", desc: "Trade NFTs with natural language intents", icon: "🖼" },
+      { text: "People Chain Identity", desc: "Send tokens by name instead of address", icon: "👤" },
+    ],
+  },
+  {
+    phase: "v3",
+    label: "Future",
+    badgeColor: "border-polkadot-purple/30 bg-polkadot-purple/10 text-polkadot-purple",
+    items: [
+      { text: "AI Trading Strategies", desc: "DCA, stop-loss, scheduled intents", icon: "🤖" },
+      { text: "XCM Cross-Chain Swaps", desc: "Trade across parachains seamlessly", icon: "🔗" },
+      { text: "DEX Aggregation", desc: "Best price across multiple liquidity pools", icon: "📊" },
+    ],
+  },
+];
+
+/* ── Animated Demo ─────────────────────────────────────── */
+const DEMO_TEXT = "Swap 100 DOT for USDT";
+const TYPING_SPEED = 70; // ms per char
+const PAUSE_AFTER_TYPE = 600;
+const AI_THINKING_TIME = 1500;
+const PREVIEW_DISPLAY_TIME = 5000;
+const PAUSE_BEFORE_RESTART = 1500;
+
+type DemoPhase = "typing" | "thinking" | "preview" | "reset";
+
+function AnimatedDemo() {
+  const [phase, setPhase] = useState<DemoPhase>("typing");
+  const [charIndex, setCharIndex] = useState(0);
+  const [timerValue, setTimerValue] = useState(30);
+  const [elapsed, setElapsed] = useState(0);
+
+  // Total cycle ≈ 10.5s — track elapsed for progress bar
+  const TOTAL_CYCLE = 10500;
+  useEffect(() => {
+    const t = setInterval(() => {
+      setElapsed((e) => (e >= TOTAL_CYCLE ? 0 : e + 100));
+    }, 100);
+    return () => clearInterval(t);
+  }, []);
+
+  // Typing effect
+  useEffect(() => {
+    if (phase !== "typing") return;
+    if (charIndex >= DEMO_TEXT.length) {
+      const t = setTimeout(() => setPhase("thinking"), PAUSE_AFTER_TYPE);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setCharIndex((i) => i + 1), TYPING_SPEED);
+    return () => clearTimeout(t);
+  }, [phase, charIndex]);
+
+  // AI thinking → preview
+  useEffect(() => {
+    if (phase !== "thinking") return;
+    const t = setTimeout(() => {
+      setPhase("preview");
+      setTimerValue(30);
+    }, AI_THINKING_TIME);
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  // Preview timer countdown + auto-restart
+  useEffect(() => {
+    if (phase !== "preview") return;
+    if (timerValue <= 25) {
+      const t = setTimeout(() => setPhase("reset"), PAUSE_BEFORE_RESTART);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setTimerValue((v) => v - 1), 1000);
+    return () => clearTimeout(t);
+  }, [phase, timerValue]);
+
+  // Reset → restart loop
+  useEffect(() => {
+    if (phase !== "reset") return;
+    const t = setTimeout(() => {
+      setCharIndex(0);
+      setElapsed(0);
+      setPhase("typing");
+    }, 500);
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  const displayedText = DEMO_TEXT.slice(0, charIndex);
+  const progress = timerValue / 30;
+  const circumference = 2 * Math.PI * 10;
+  const strokeDashoffset = circumference * (1 - progress);
+
+  const progressPct = Math.min((elapsed / TOTAL_CYCLE) * 100, 100);
+
+  return (
+    <div className="animate-fade-in-up w-full max-w-md" style={{ animationDelay: "0.4s" }}>
+      {/* Demo badge + progress */}
+      <div className="mb-3 flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-polkadot-pink/60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-polkadot-pink" />
+          </span>
+          <span className="text-[11px] font-medium text-white/40">Live Demo</span>
+        </div>
+        <span className="text-[10px] text-white/20">
+          {phase === "typing" ? "User typing..." : phase === "thinking" ? "AI analyzing..." : phase === "preview" ? "Preview ready" : ""}
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="mb-4 h-[2px] w-full rounded-full bg-white/[0.06] overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-polkadot-pink to-polkadot-purple transition-all duration-100 ease-linear"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
+
+      <div className="space-y-3">
+      {/* Chat input simulation */}
+      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 rounded-xl bg-white/[0.05] border border-white/[0.08] px-4 py-3 min-h-[44px]">
+            <span className="text-sm text-white/80">{displayedText}</span>
+            {phase === "typing" && (
+              <span className="inline-block w-[2px] h-4 bg-polkadot-pink ml-0.5 align-middle animate-blink" />
+            )}
+          </div>
+          <button
+            className={`rounded-xl p-3 transition-all ${
+              phase === "typing" && charIndex >= DEMO_TEXT.length
+                ? "bg-polkadot-pink text-white"
+                : charIndex > 0 ? "bg-polkadot-pink/60 text-white/60" : "bg-white/[0.05] text-white/20"
+            }`}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* AI thinking indicator — always rendered, opacity toggles */}
+      <div className={`flex items-start gap-3 px-2 transition-all duration-300 ${phase === "thinking" ? "opacity-100" : "opacity-0 h-0 overflow-hidden"}`}>
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-polkadot-pink/10 border border-polkadot-pink/20">
+          <svg className="h-3.5 w-3.5 text-polkadot-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+          </svg>
+        </div>
+        <div className="rounded-2xl rounded-tl-md bg-white/[0.04] border border-white/[0.06] px-4 py-3">
+          <div className="dot-pulse flex gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/40" />
+          </div>
+        </div>
+      </div>
+
+      {/* Transaction Preview Card — always rendered, opacity toggles */}
+      <div className={`rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-5 space-y-4 transition-all duration-500 ${phase === "preview" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
+        {/* Header with timer */}
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30">Transaction Preview</p>
+          <div className="flex items-center gap-1">
+            <svg className="h-5 w-5 -rotate-90" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/[0.06]" />
+              <circle cx="12" cy="12" r="10" fill="none" strokeWidth="2" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className="text-white/20" style={{ transition: "stroke-dashoffset 1s linear" }} />
+            </svg>
+            <span className="text-[11px] font-mono tabular-nums text-white/30">{timerValue}s</span>
+          </div>
+        </div>
+
+        {/* Swap summary */}
+        <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-4">
+          <div className="text-center space-y-1">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-white/30">You send</p>
+            <p className="text-2xl font-bold text-white">100 <span className="text-lg text-white/60">DOT</span></p>
+          </div>
+          <div className="my-3 flex justify-center">
+            <div className="rounded-full border border-white/[0.08] bg-white/[0.04] p-1.5">
+              <svg className="h-3.5 w-3.5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
+          </div>
+          <div className="text-center space-y-1">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-white/30">You receive</p>
+            <p className="text-2xl font-bold text-polkadot-green">685.42 <span className="text-lg text-polkadot-green/60">USDT</span></p>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="space-y-2 px-1">
+          <div className="flex justify-between text-xs">
+            <span className="text-white/35">Slippage</span>
+            <span className="text-white/60">0.31%</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-white/35">Price Impact</span>
+            <span className="text-white/60">0.01%</span>
+          </div>
+        </div>
+
+        {/* Risk badge */}
+        <div className="rounded-xl border border-risk-green/30 bg-risk-green/10 px-4 py-3 text-center text-sm font-semibold text-risk-green">
+          ✅ LOW RISK
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 pt-1">
+          <div className="flex-1 rounded-xl border border-white/[0.08] py-2.5 text-center text-sm text-white/40">Cancel</div>
+          <div className="flex-1 rounded-xl bg-polkadot-pink py-2.5 text-center text-sm font-semibold text-white shadow-lg shadow-polkadot-pink/20">Confirm Swap</div>
+        </div>
+      </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Page Component ────────────────────────────────── */
+export default function Home() {
+  const { isConnected, chain } = useAccount();
+  const [mounted, setMounted] = useState(false);
+  const showLanding = mounted && !isConnected;
+  const scrollRef = useScrollAnimation(showLanding);
+  useEffect(() => setMounted(true), []);
+
+  const isCorrectChain = isConnected && chain?.id === polkadotHubTestnet.id;
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  return (
+    <main className="relative flex min-h-screen flex-col">
+      {/* Header */}
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-white/[0.06] px-6 py-4 glass">
+        <div className="flex items-center gap-3">
+          <button onClick={scrollToTop} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <h1 className="text-xl font-bold text-white tracking-tight">
+              Intent<span className="text-polkadot-pink">DOT</span>
+            </h1>
+            <span className="rounded-full border border-polkadot-pink/20 bg-polkadot-pink/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-polkadot-pink">
+              AI DeFi
+            </span>
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <ConnectWallet />
+        </div>
+      </header>
+
+      {/* Main content */}
+      {!mounted ? null : isCorrectChain ? (
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center p-6">
+          <Chat />
+        </div>
+      ) : isConnected ? (
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center p-6">
+          <div className="text-center max-w-md">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-yellow-500/20 bg-yellow-500/10">
+              <svg className="h-10 w-10 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+              </svg>
+            </div>
+            <h2 className="mb-2 text-2xl font-bold text-white">Wrong Network</h2>
+            <p className="mb-6 text-sm text-white/50 leading-relaxed">
+              IntentDOT runs on Polkadot Hub TestNet. Switch your network to continue.
+            </p>
+          </div>
+        </div>
+      ) : (
+        /* ═══════ LANDING PAGE ═══════ */
+        <div ref={scrollRef} className="relative z-10">
+
+          {/* ── Section 1: Hero ────────────────────────────── */}
+          <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden px-6 py-20">
+            {/* Floating decorative orbs */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="animate-float absolute -left-32 top-1/4 h-64 w-64 rounded-full bg-polkadot-pink/10 blur-3xl" />
+              <div className="animate-float absolute -right-32 top-1/3 h-80 w-80 rounded-full bg-polkadot-purple/10 blur-3xl" style={{ animationDelay: "2s" }} />
+              <div className="animate-float absolute bottom-1/4 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-polkadot-cyan/8 blur-3xl" style={{ animationDelay: "4s" }} />
+            </div>
+
+            <div className="relative flex max-w-4xl flex-col items-center text-center">
+              {/* Testnet badge */}
+              <div className="animate-fade-in-up mb-8 flex items-center gap-2 rounded-full border border-polkadot-green/20 bg-polkadot-green/5 px-4 py-1.5">
+                <span className="h-2 w-2 rounded-full bg-polkadot-green animate-pulse" />
+                <span className="text-xs font-medium text-polkadot-green">Live on Polkadot Hub TestNet</span>
+              </div>
+
+              {/* Heading */}
+              <h2 className="animate-fade-in-up mb-6 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-7xl" style={{ animationDelay: "0.1s" }}>
+                DeFi in Plain English.
+                <br />
+                <span className="gradient-text">Secured by AI.</span>
+              </h2>
+
+              {/* Subheading */}
+              <p className="animate-fade-in-up mb-10 max-w-xl text-base text-white/40 leading-relaxed sm:text-lg" style={{ animationDelay: "0.2s" }}>
+                Type what you want in natural language. Our AI Risk Guardian evaluates every transaction before you confirm. Built on Polkadot.
+              </p>
+
+              {/* CTA */}
+              <div className="animate-fade-in-up mb-16" style={{ animationDelay: "0.3s" }}>
+                <ConnectWallet />
+              </div>
+
+              {/* Animated demo */}
+              <AnimatedDemo />
+            </div>
+
+            {/* Scroll indicator */}
+            <div className="absolute bottom-8 flex flex-col items-center gap-2 animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
+              <span className="text-[10px] uppercase tracking-widest text-white/20">Scroll</span>
+              <svg className="h-4 w-4 text-white/20 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
+          </section>
+
+          {/* ── Section 2: Features ───────────────────────── */}
+          <section className="px-6 py-24">
+            <div className="mx-auto max-w-5xl">
+              <h3 className="animate-on-scroll mb-4 text-center text-sm font-semibold uppercase tracking-widest text-polkadot-pink">
+                Features
+              </h3>
+              <p className="animate-on-scroll mb-16 text-center text-3xl font-bold text-white sm:text-4xl">
+                Everything you need for<br className="hidden sm:block" /> intent-based DeFi
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {features.map((f, i) => (
+                  <div
+                    key={f.title}
+                    className={`animate-on-scroll group rounded-2xl border ${f.borderColor} bg-white/[0.02] p-6 transition-all hover:bg-white/[0.04] hover:border-white/10`}
+                    style={{ transitionDelay: `${(i + 1) * 100}ms` }}
+                  >
+                    <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${f.bgColor} ${f.textColor}`}>
+                      <FeatureIcon name={f.icon} />
+                    </div>
+                    <h4 className="mb-2 text-base font-semibold text-white">{f.title}</h4>
+                    <p className="text-sm leading-relaxed text-white/40">{f.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── Section 3: How It Works ───────────────────── */}
+          <section className="px-6 py-24">
+            <div className="mx-auto max-w-4xl">
+              <h3 className="animate-on-scroll mb-4 text-center text-sm font-semibold uppercase tracking-widest text-polkadot-cyan">
+                How It Works
+              </h3>
+              <p className="animate-on-scroll mb-16 text-center text-3xl font-bold text-white sm:text-4xl">
+                Three steps to safe DeFi
+              </p>
+              <div className="relative grid gap-8 sm:grid-cols-3">
+                {/* Connecting line (hidden on mobile) */}
+                <div className="pointer-events-none absolute top-12 left-[16.67%] right-[16.67%] hidden border-t-2 border-dashed border-white/10 sm:block" />
+                {steps.map((s, i) => (
+                  <div key={s.num} className="animate-on-scroll relative flex flex-col items-center text-center" style={{ transitionDelay: `${(i + 1) * 100}ms` }}>
+                    <div className="relative z-10 mb-6 flex h-24 w-24 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+                      <span className="text-2xl font-bold gradient-text">{s.num}</span>
+                    </div>
+                    <h4 className="mb-2 text-base font-semibold text-white">{s.title}</h4>
+                    <p className="text-sm leading-relaxed text-white/40">{s.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── Section 4: Roadmap ────────────────────────── */}
+          <section className="px-6 py-24">
+            <div className="mx-auto max-w-4xl">
+              <h3 className="animate-on-scroll mb-4 text-center text-sm font-semibold uppercase tracking-widest text-polkadot-purple">
+                Roadmap
+              </h3>
+              <p className="animate-on-scroll mb-16 text-center text-3xl font-bold text-white sm:text-4xl">
+                What&apos;s next for IntentDOT
+              </p>
+              <div className="grid gap-8 sm:grid-cols-2">
+                {roadmapPhases.map((phase, pi) => (
+                  <div key={phase.phase} className="animate-on-scroll" style={{ transitionDelay: `${(pi + 1) * 100}ms` }}>
+                    <div className="mb-4 flex items-center gap-3">
+                      <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${phase.badgeColor}`}>
+                        {phase.phase}
+                      </span>
+                      <span className="text-sm text-white/30">{phase.label}</span>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      {phase.items.map((item) => (
+                        <div
+                          key={item.text}
+                          className="group rounded-xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 transition-colors hover:bg-white/[0.04]"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg">{item.icon}</span>
+                            <div>
+                              <p className="text-sm font-medium text-white/80">{item.text}</p>
+                              <p className="text-xs text-white/30">{item.desc}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── Section 5: CTA ────────────────────────────── */}
+          <section className="px-6 py-24">
+            <div className="mx-auto max-w-2xl">
+              <div className="animate-on-scroll animate-pulse-glow rounded-2xl border border-white/[0.08] glass p-10 text-center sm:p-14">
+                <h3 className="mb-4 text-2xl font-bold text-white sm:text-3xl">
+                  Ready to try intent-based DeFi?
+                </h3>
+                <p className="mb-8 text-sm text-white/40 leading-relaxed">
+                  Connect your wallet and start trading with natural language on Polkadot Hub TestNet.
+                </p>
+                <ConnectWallet />
+              </div>
+            </div>
+          </section>
+
+          {/* ── Footer ────────────────────────────────────── */}
+          <footer className="border-t border-white/[0.04] px-6 py-8">
+            <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 sm:flex-row">
+              <div className="flex items-center gap-3">
+                <span className="text-base font-bold text-white">
+                  Intent<span className="text-polkadot-pink">DOT</span>
+                </span>
+                <span className="text-xs text-white/20">AI-powered DeFi Intent Solver</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1.5 text-xs text-white/20">
+                  <span className="h-1.5 w-1.5 rounded-full bg-polkadot-green" />
+                  Built on Polkadot Hub TestNet
+                </span>
+                <a
+                  href="https://github.com/phatdev-org/IntentDOT"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-white/20 hover:text-white/40 transition-colors"
+                >
+                  GitHub
+                </a>
+              </div>
+            </div>
+          </footer>
+        </div>
+      )}
+
+      {/* Footer for connected states */}
+      {mounted && (isCorrectChain || isConnected) && (
+        <footer className="relative z-10 border-t border-white/[0.04] px-6 py-3 text-center">
+          <p className="text-[11px] text-white/20">
+            Built on Polkadot Hub TestNet &middot; AI-powered DeFi Intent Solver
+          </p>
+        </footer>
+      )}
+    </main>
+  );
+}

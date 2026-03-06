@@ -38,13 +38,18 @@ artifacts/
 typechain-types/
 cache_hardhat/
 
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-
 # Foundry
 out/
 cache/
 broadcast/
+contracts/.env
+
+# Internal docs (not for public repo)
+docs/
+
+# Internal scripts
+scripts/
+
+# TypeScript build cache
+*.tsbuildinfo
+contracts/lib/
