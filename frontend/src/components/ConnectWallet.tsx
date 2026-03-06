@@ -1,13 +1,12 @@
 "use client";
 
 import { useAccount, useConnect, useDisconnect, useBalance, useSwitchChain } from "wagmi";
-import { injected } from "wagmi/connectors";
 import { useState, useEffect } from "react";
 import { polkadotHubTestnet } from "@/lib/wagmi";
 
 export function ConnectWallet() {
   const { address, isConnected, chain } = useAccount();
-  const { connect, error } = useConnect();
+  const { connect, connectors, error } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
   const { data: balance } = useBalance({ address });
@@ -61,10 +60,26 @@ export function ConnectWallet() {
     );
   }
 
+  const handleConnect = () => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const hasInjected = typeof window !== "undefined" && window.ethereum;
+
+    if (isMobile && !hasInjected) {
+      // Redirect to MetaMask mobile browser with deeplink
+      const dappUrl = window.location.href;
+      window.location.href = `https://metamask.app.link/dapp/${dappUrl.replace(/^https?:\/\//, "")}`;
+      return;
+    }
+
+    // Use first available connector
+    const connector = connectors[0];
+    if (connector) connect({ connector });
+  };
+
   return (
     <div className="flex flex-col items-end gap-1">
       <button
-        onClick={() => connect({ connector: injected() })}
+        onClick={handleConnect}
         className="rounded-xl bg-polkadot-pink px-5 py-2.5 text-sm font-semibold text-white hover:bg-polkadot-pink/80 transition-all hover:shadow-lg hover:shadow-polkadot-pink/20 active:scale-[0.98]"
       >
         Connect Wallet
