@@ -119,19 +119,22 @@ const DEMO_TEXT = "Swap 100 DOT for USDT";
 const TYPING_SPEED = 70; // ms per char
 const PAUSE_AFTER_TYPE = 600;
 const AI_THINKING_TIME = 1500;
-const PREVIEW_DISPLAY_TIME = 5000;
-const PAUSE_BEFORE_RESTART = 1500;
+const PREVIEW_DISPLAY_TIME = 1800;
+const CONFIRMING_TIME = 2000;
+const SUCCESS_DISPLAY_TIME = 3000;
+const PAUSE_BEFORE_RESTART = 1000;
 
-type DemoPhase = "typing" | "thinking" | "preview" | "reset";
+type DemoPhase = "typing" | "thinking" | "preview" | "confirming" | "success" | "reset";
 
 function AnimatedDemo() {
   const [phase, setPhase] = useState<DemoPhase>("typing");
   const [charIndex, setCharIndex] = useState(0);
   const [timerValue, setTimerValue] = useState(30);
   const [elapsed, setElapsed] = useState(0);
+  const [confirmClicked, setConfirmClicked] = useState(false);
 
-  // Total cycle ≈ 10.5s — track elapsed for progress bar
-  const TOTAL_CYCLE = 10500;
+  // typing(~2070) + thinking(1500) + preview(1800+400) + confirming(2000) + success(3000) + reset(1000)
+  const TOTAL_CYCLE = 11800;
   useEffect(() => {
     const t = setInterval(() => {
       setElapsed((e) => (e >= TOTAL_CYCLE ? 0 : e + 100));
@@ -156,20 +159,43 @@ function AnimatedDemo() {
     const t = setTimeout(() => {
       setPhase("preview");
       setTimerValue(30);
+      setConfirmClicked(false);
     }, AI_THINKING_TIME);
     return () => clearTimeout(t);
   }, [phase]);
 
-  // Preview timer countdown + auto-restart
+  // Preview → auto-click confirm after delay
   useEffect(() => {
     if (phase !== "preview") return;
-    if (timerValue <= 25) {
-      const t = setTimeout(() => setPhase("reset"), PAUSE_BEFORE_RESTART);
-      return () => clearTimeout(t);
-    }
+    const clickDelay = setTimeout(() => {
+      setConfirmClicked(true);
+      const confirmDelay = setTimeout(() => setPhase("confirming"), 400);
+      return () => clearTimeout(confirmDelay);
+    }, PREVIEW_DISPLAY_TIME);
+    return () => clearTimeout(clickDelay);
+  }, [phase]);
+
+  // Preview timer countdown (visual only)
+  useEffect(() => {
+    if (phase !== "preview" && phase !== "confirming") return;
+    if (timerValue <= 0) return;
     const t = setTimeout(() => setTimerValue((v) => v - 1), 1000);
     return () => clearTimeout(t);
   }, [phase, timerValue]);
+
+  // Confirming → success
+  useEffect(() => {
+    if (phase !== "confirming") return;
+    const t = setTimeout(() => setPhase("success"), CONFIRMING_TIME);
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  // Success → reset
+  useEffect(() => {
+    if (phase !== "success") return;
+    const t = setTimeout(() => setPhase("reset"), SUCCESS_DISPLAY_TIME);
+    return () => clearTimeout(t);
+  }, [phase]);
 
   // Reset → restart loop
   useEffect(() => {
@@ -177,8 +203,9 @@ function AnimatedDemo() {
     const t = setTimeout(() => {
       setCharIndex(0);
       setElapsed(0);
+      setConfirmClicked(false);
       setPhase("typing");
-    }, 500);
+    }, PAUSE_BEFORE_RESTART);
     return () => clearTimeout(t);
   }, [phase]);
 
@@ -201,7 +228,7 @@ function AnimatedDemo() {
           <span className="text-[11px] font-medium text-white/40">Live Demo</span>
         </div>
         <span className="text-[10px] text-white/20">
-          {phase === "typing" ? "User typing..." : phase === "thinking" ? "AI analyzing..." : phase === "preview" ? "Preview ready" : ""}
+          {phase === "typing" ? "User typing..." : phase === "thinking" ? "AI analyzing..." : phase === "preview" ? "Preview ready" : phase === "confirming" ? "Executing..." : phase === "success" ? "✓ Complete" : ""}
         </span>
       </div>
 
@@ -238,7 +265,7 @@ function AnimatedDemo() {
       </div>
 
       {/* AI thinking indicator — always rendered, opacity toggles */}
-      <div className={`flex items-start gap-3 px-2 transition-all duration-300 ${phase === "thinking" ? "opacity-100" : "opacity-0 h-0 overflow-hidden"}`}>
+      <div className={`flex items-start gap-3 px-2 transition-opacity duration-300 ${phase === "thinking" ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"}`}>
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-polkadot-pink/10 border border-polkadot-pink/20">
           <svg className="h-3.5 w-3.5 text-polkadot-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
@@ -253,61 +280,101 @@ function AnimatedDemo() {
         </div>
       </div>
 
-      {/* Transaction Preview Card — always rendered, opacity toggles */}
-      <div className={`rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-5 space-y-4 transition-all duration-500 ${phase === "preview" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
-        {/* Header with timer */}
-        <div className="flex items-center justify-between">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30">Transaction Preview</p>
-          <div className="flex items-center gap-1">
-            <svg className="h-5 w-5 -rotate-90" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/[0.06]" />
-              <circle cx="12" cy="12" r="10" fill="none" strokeWidth="2" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className="text-white/20" style={{ transition: "stroke-dashoffset 1s linear" }} />
-            </svg>
-            <span className="text-[11px] font-mono tabular-nums text-white/30">{timerValue}s</span>
-          </div>
-        </div>
+      {/* Transaction Preview Card — fixed height to prevent layout jumps */}
+      <div className={`rounded-2xl border bg-white/[0.03] backdrop-blur-xl p-5 space-y-4 transition-opacity duration-500 ${(phase === "preview" || phase === "confirming" || phase === "success") ? "opacity-100 border-white/[0.08]" : "opacity-0 border-transparent pointer-events-none"}`} style={{ minHeight: 420 }}>
 
-        {/* Swap summary */}
-        <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-4">
-          <div className="text-center space-y-1">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-white/30">You send</p>
-            <p className="text-2xl font-bold text-white">100 <span className="text-lg text-white/60">DOT</span></p>
-          </div>
-          <div className="my-3 flex justify-center">
-            <div className="rounded-full border border-white/[0.08] bg-white/[0.04] p-1.5">
-              <svg className="h-3.5 w-3.5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        {/* Success overlay */}
+        {phase === "success" && (
+          <div className="flex flex-col items-center justify-center gap-3 animate-fade-in-up" style={{ minHeight: 380 }}>
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-polkadot-green bg-polkadot-green/10">
+              <svg className="h-7 w-7 text-polkadot-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </div>
+            <p className="text-lg font-semibold text-white">Swap Executed!</p>
+            <div className="rounded-lg bg-white/[0.04] border border-white/[0.06] px-4 py-2.5 text-center">
+              <p className="text-[10px] uppercase tracking-wider text-white/30 mb-1">Transaction Hash</p>
+              <p className="text-xs font-mono text-polkadot-cyan">0x7a3f...b82d</p>
+            </div>
+            <div className="flex items-center gap-4 mt-1 text-xs text-white/30">
+              <span>100 DOT → 685.42 USDT</span>
+              <span className="text-polkadot-green">✓ Confirmed</span>
+            </div>
           </div>
-          <div className="text-center space-y-1">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-white/30">You receive</p>
-            <p className="text-2xl font-bold text-polkadot-green">685.42 <span className="text-lg text-polkadot-green/60">USDT</span></p>
-          </div>
-        </div>
+        )}
 
-        {/* Stats */}
-        <div className="space-y-2 px-1">
-          <div className="flex justify-between text-xs">
-            <span className="text-white/35">Slippage</span>
-            <span className="text-white/60">0.31%</span>
+        {/* Confirming state */}
+        {phase === "confirming" && (
+          <div className="flex flex-col items-center justify-center gap-3 animate-fade-in-up" style={{ minHeight: 380 }}>
+            <div className="relative h-12 w-12">
+              <div className="absolute inset-0 rounded-full border-2 border-white/10" />
+              <div className="absolute inset-0 rounded-full border-2 border-t-polkadot-pink border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+            </div>
+            <p className="text-sm font-medium text-white/80">Confirming on-chain...</p>
+            <p className="text-xs text-white/30">Waiting for block confirmation</p>
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-white/35">Price Impact</span>
-            <span className="text-white/60">0.01%</span>
-          </div>
-        </div>
+        )}
 
-        {/* Risk badge */}
-        <div className="rounded-xl border border-risk-green/30 bg-risk-green/10 px-4 py-3 text-center text-sm font-semibold text-risk-green">
-          ✅ LOW RISK
-        </div>
+        {/* Preview content — hidden during confirming/success */}
+        {phase === "preview" && (
+          <>
+            {/* Header with timer */}
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30">Transaction Preview</p>
+              <div className="flex items-center gap-1">
+                <svg className="h-5 w-5 -rotate-90" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/[0.06]" />
+                  <circle cx="12" cy="12" r="10" fill="none" strokeWidth="2" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className="text-white/20" style={{ transition: "stroke-dashoffset 1s linear" }} />
+                </svg>
+                <span className="text-[11px] font-mono tabular-nums text-white/30">{timerValue}s</span>
+              </div>
+            </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 pt-1">
-          <div className="flex-1 rounded-xl border border-white/[0.08] py-2.5 text-center text-sm text-white/40">Cancel</div>
-          <div className="flex-1 rounded-xl bg-polkadot-pink py-2.5 text-center text-sm font-semibold text-white shadow-lg shadow-polkadot-pink/20">Confirm Swap</div>
-        </div>
+            {/* Swap summary */}
+            <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-4">
+              <div className="text-center space-y-1">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-white/30">You send</p>
+                <p className="text-2xl font-bold text-white">100 <span className="text-lg text-white/60">DOT</span></p>
+              </div>
+              <div className="my-3 flex justify-center">
+                <div className="rounded-full border border-white/[0.08] bg-white/[0.04] p-1.5">
+                  <svg className="h-3.5 w-3.5 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </div>
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-white/30">You receive</p>
+                <p className="text-2xl font-bold text-polkadot-green">685.42 <span className="text-lg text-polkadot-green/60">USDT</span></p>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="space-y-2 px-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-white/35">Slippage</span>
+                <span className="text-white/60">0.31%</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-white/35">Price Impact</span>
+                <span className="text-white/60">0.01%</span>
+              </div>
+            </div>
+
+            {/* Risk badge */}
+            <div className="rounded-xl border border-risk-green/30 bg-risk-green/10 px-4 py-3 text-center text-sm font-semibold text-risk-green">
+              ✅ LOW RISK
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-1">
+              <div className="flex-1 rounded-xl border border-white/[0.08] py-2.5 text-center text-sm text-white/40">Cancel</div>
+              <div className={`flex-1 rounded-xl py-2.5 text-center text-sm font-semibold text-white shadow-lg transition-all duration-200 ${confirmClicked ? "bg-polkadot-pink/60 scale-95 shadow-none" : "bg-polkadot-pink shadow-polkadot-pink/20"}`}>
+                Confirm Swap
+              </div>
+            </div>
+          </>
+        )}
       </div>
       </div>
     </div>

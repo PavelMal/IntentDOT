@@ -22,7 +22,7 @@ const STORAGE_KEY = "intentdot-chat-history";
 const WELCOME_MESSAGE: ChatMessage = {
   role: "assistant",
   content:
-    'Welcome to IntentDOT! Tell me what you want to do.\nExamples:\n• "Swap 10 DOT to USDT"\n• "Send 50 USDT to 0x..."\n• "Create a token called PEPE with 1M supply"',
+    'What would you like to do?\n• Swap 10 DOT to USDT\n• Send 50 USDT to 0x...\n• Create token PEPE 1M supply',
 };
 
 function loadMessages(): ChatMessage[] {

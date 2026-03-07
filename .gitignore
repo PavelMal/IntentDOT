@@ -52,4 +52,9 @@ scripts/
 
 # TypeScript build cache
 *.tsbuildinfo
+
+# w3wallets / Playwright
+.w3wallets/
+test-results/
+playwright-report/
 contracts/lib/
