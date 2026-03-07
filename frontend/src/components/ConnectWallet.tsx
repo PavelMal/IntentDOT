@@ -6,7 +6,17 @@ import { polkadotHubTestnet } from "@/lib/wagmi";
 
 export function ConnectWallet() {
   const { address, isConnected, chain } = useAccount();
-  const { connect, connectors, error } = useConnect();
+  const { connect, connectors, error: rawError } = useConnect();
+  const [showError, setShowError] = useState(false);
+
+  // Show error briefly, then auto-dismiss
+  useEffect(() => {
+    if (rawError) {
+      setShowError(true);
+      const t = setTimeout(() => setShowError(false), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [rawError]);
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
   const { data: balance } = useBalance({ address });
@@ -77,26 +87,30 @@ export function ConnectWallet() {
   };
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="relative flex flex-col items-end">
       <button
         onClick={handleConnect}
         className="rounded-xl bg-polkadot-pink px-5 py-2.5 text-sm font-semibold text-white hover:bg-polkadot-pink/80 transition-all hover:shadow-lg hover:shadow-polkadot-pink/20 active:scale-[0.98]"
       >
         Connect Wallet
       </button>
-      {error && (
-        <span className="text-[11px] text-red-400/80 max-w-[280px] text-right">
-          {error.message.toLowerCase().includes("provider") ? (
-            <>
-              MetaMask not found.{" "}
-              <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer" className="underline hover:text-red-300">
-                Install
-              </a>
-            </>
-          ) : (
-            error.message.slice(0, 80)
-          )}
-        </span>
+      {showError && rawError && (
+        <div className="absolute top-full right-0 mt-2 flex items-center gap-2 rounded-lg border border-yellow-500/20 bg-yellow-500/5 backdrop-blur-sm px-3 py-2 animate-fade-in-up whitespace-nowrap">
+          <span className="text-[11px] text-yellow-300/70">
+            {rawError.message.toLowerCase().includes("provider") ? (
+              <>
+                MetaMask not found.{" "}
+                <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer" className="underline text-polkadot-pink/80 hover:text-polkadot-pink">
+                  Install →
+                </a>
+              </>
+            ) : rawError.message.toLowerCase().includes("rejected") ? (
+              "Connection cancelled"
+            ) : (
+              rawError.message.slice(0, 60)
+            )}
+          </span>
+        </div>
       )}
     </div>
   );
