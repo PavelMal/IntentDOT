@@ -4,6 +4,10 @@
 
 **Say what you want. Get it done safely.**
 
+<p align="center">
+  <img src="frontend/public/demo.svg" alt="IntentDOT Demo — type intent, preview, confirm, execute" width="480"/>
+</p>
+
 IntentDOT lets you execute DeFi operations on Polkadot by simply typing what you want in natural language. An AI agent parses your intent, evaluates risks, and executes the optimal transaction — all in one interface.
 
 ## Features
