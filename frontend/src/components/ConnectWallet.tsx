@@ -1,13 +1,25 @@
 "use client";
 
 import { useAccount, useConnect, useDisconnect, useBalance, useSwitchChain } from "wagmi";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { polkadotHubTestnet } from "@/lib/wagmi";
 
 export function ConnectWallet() {
   const { address, isConnected, chain } = useAccount();
   const { connect, connectors, error: rawError } = useConnect();
   const [showError, setShowError] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const wasConnected = useRef(isConnected);
+
+  // Redirect to /chat after wallet connection (only from landing page)
+  useEffect(() => {
+    if (!wasConnected.current && isConnected && pathname === "/") {
+      router.push("/chat");
+    }
+    wasConnected.current = isConnected;
+  }, [isConnected, pathname, router]);
 
   // Show error briefly, then auto-dismiss
   useEffect(() => {
