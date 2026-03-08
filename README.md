@@ -36,7 +36,7 @@ Chat UI → AI Parser → Risk Guardian → TX Preview → Smart Contracts
 ### Prerequisites
 
 - Node.js 20+
-- Foundry nightly (`curl -L https://foundry.paradigm.xyz | bash && foundryup`)
+- Foundry nightly
 - MetaMask
 
 ### Setup
