@@ -46,6 +46,7 @@ contracts/.env
 
 # Internal docs (not for public repo)
 docs/
+!docs/index.html
 
 # Internal scripts
 scripts/
