@@ -1,10 +1,9 @@
 "use client";
 
 import { ConnectWallet } from "@/components/ConnectWallet";
-import { Chat } from "@/components/Chat";
 import { useAccount } from "wagmi";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { polkadotHubTestnet } from "@/lib/wagmi";
+import Link from "next/link";
 
 /* ── Scroll Animation Hook ─────────────────────────────── */
 function useScrollAnimation(active: boolean) {
@@ -383,13 +382,10 @@ function AnimatedDemo() {
 
 /* ── Main Page Component ────────────────────────────────── */
 export default function Home() {
-  const { isConnected, chain } = useAccount();
+  const { isConnected } = useAccount();
   const [mounted, setMounted] = useState(false);
-  const showLanding = mounted && !isConnected;
-  const scrollRef = useScrollAnimation(showLanding);
+  const scrollRef = useScrollAnimation(mounted);
   useEffect(() => setMounted(true), []);
-
-  const isCorrectChain = isConnected && chain?.id === polkadotHubTestnet.id;
 
   const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -410,31 +406,20 @@ export default function Home() {
           </button>
         </div>
         <div className="flex items-center gap-2">
+          {mounted && isConnected && (
+            <Link
+              href="/chat"
+              className="rounded-xl border border-polkadot-pink/30 bg-polkadot-pink/10 px-4 py-2.5 text-sm font-semibold text-polkadot-pink hover:bg-polkadot-pink/20 transition-all"
+            >
+              Launch App
+            </Link>
+          )}
           <ConnectWallet />
         </div>
       </header>
 
-      {/* Main content */}
-      {!mounted ? null : isCorrectChain ? (
-        <div className="relative z-10 flex flex-1 flex-col items-center justify-center p-6">
-          <Chat />
-        </div>
-      ) : isConnected ? (
-        <div className="relative z-10 flex flex-1 flex-col items-center justify-center p-6">
-          <div className="text-center max-w-md">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-yellow-500/20 bg-yellow-500/10">
-              <svg className="h-10 w-10 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-              </svg>
-            </div>
-            <h2 className="mb-2 text-2xl font-bold text-white">Wrong Network</h2>
-            <p className="mb-6 text-sm text-white/50 leading-relaxed">
-              IntentDOT runs on Polkadot Hub TestNet. Switch your network to continue.
-            </p>
-          </div>
-        </div>
-      ) : (
-        /* ═══════ LANDING PAGE ═══════ */
+      {/* Landing page — always visible */}
+      {mounted && (
         <div ref={scrollRef} className="relative z-10">
 
           {/* ── Section 1: Hero ────────────────────────────── */}
@@ -467,7 +452,16 @@ export default function Home() {
 
               {/* CTA */}
               <div className="animate-fade-in-up mb-16" style={{ animationDelay: "0.3s" }}>
-                <ConnectWallet />
+                {isConnected ? (
+                  <Link
+                    href="/chat"
+                    className="inline-block rounded-xl bg-polkadot-pink px-8 py-3 text-base font-semibold text-white hover:bg-polkadot-pink/80 transition-all hover:shadow-lg hover:shadow-polkadot-pink/20 active:scale-[0.98]"
+                  >
+                    Launch App
+                  </Link>
+                ) : (
+                  <ConnectWallet />
+                )}
               </div>
 
               {/* Animated demo */}
@@ -585,7 +579,16 @@ export default function Home() {
                 <p className="mb-8 text-sm text-white/40 leading-relaxed">
                   Connect your wallet and start trading with natural language on Polkadot Hub TestNet.
                 </p>
-                <ConnectWallet />
+                {isConnected ? (
+                  <Link
+                    href="/chat"
+                    className="inline-block rounded-xl bg-polkadot-pink px-8 py-3 text-base font-semibold text-white hover:bg-polkadot-pink/80 transition-all hover:shadow-lg hover:shadow-polkadot-pink/20 active:scale-[0.98]"
+                  >
+                    Launch App
+                  </Link>
+                ) : (
+                  <ConnectWallet />
+                )}
               </div>
             </div>
           </section>
@@ -605,7 +608,7 @@ export default function Home() {
                   Built on Polkadot Hub TestNet
                 </span>
                 <a
-                  href="https://github.com/phatdev-org/IntentDOT"
+                  href="https://github.com/PavelMal/IntentDOT"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-white/20 hover:text-white/40 transition-colors"
@@ -616,15 +619,6 @@ export default function Home() {
             </div>
           </footer>
         </div>
-      )}
-
-      {/* Footer for connected states */}
-      {mounted && (isCorrectChain || isConnected) && (
-        <footer className="relative z-10 border-t border-white/[0.04] px-6 py-3 text-center">
-          <p className="text-[11px] text-white/20">
-            Built on Polkadot Hub TestNet &middot; AI-powered DeFi Intent Solver
-          </p>
-        </footer>
       )}
     </main>
   );
