@@ -239,7 +239,8 @@ function AnimatedDemo() {
         />
       </div>
 
-      <div className="space-y-3">
+      {/* Fixed-height container to prevent layout jumps */}
+      <div style={{ height: 510 }}>
       {/* Chat input simulation */}
       <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl p-4">
         <div className="flex items-center gap-3">
@@ -263,8 +264,8 @@ function AnimatedDemo() {
         </div>
       </div>
 
-      {/* AI thinking indicator — always rendered, opacity toggles */}
-      <div className={`flex items-start gap-3 px-2 transition-opacity duration-300 ${phase === "thinking" ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"}`}>
+      {/* AI thinking indicator */}
+      <div className={`mt-3 flex items-start gap-3 px-2 transition-opacity duration-300 ${phase === "thinking" ? "opacity-100" : "opacity-0 pointer-events-none"}`} style={{ height: 40 }}>
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-polkadot-pink/10 border border-polkadot-pink/20">
           <svg className="h-3.5 w-3.5 text-polkadot-pink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
@@ -279,8 +280,8 @@ function AnimatedDemo() {
         </div>
       </div>
 
-      {/* Transaction Preview Card — fixed height to prevent layout jumps */}
-      <div className={`rounded-2xl border bg-white/[0.03] backdrop-blur-xl p-5 space-y-4 transition-opacity duration-500 ${(phase === "preview" || phase === "confirming" || phase === "success") ? "opacity-100 border-white/[0.08]" : "opacity-0 border-transparent pointer-events-none"}`} style={{ minHeight: 420 }}>
+      {/* Transaction Preview Card */}
+      <div className={`mt-3 rounded-2xl border bg-white/[0.03] backdrop-blur-xl p-5 space-y-4 transition-opacity duration-500 ${(phase === "preview" || phase === "confirming" || phase === "success") ? "opacity-100 border-white/[0.08]" : "opacity-0 border-transparent pointer-events-none"}`}>
 
         {/* Success overlay */}
         {phase === "success" && (
@@ -423,7 +424,7 @@ export default function Home() {
         <div ref={scrollRef} className="relative z-10">
 
           {/* ── Section 1: Hero ────────────────────────────── */}
-          <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden px-6 py-20">
+          <section className="relative flex min-h-[100vh] flex-col items-center justify-center overflow-hidden px-6 pt-16 pb-24">
             {/* Floating decorative orbs */}
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
               <div className="animate-float absolute -left-32 top-1/4 h-64 w-64 rounded-full bg-polkadot-pink/10 blur-3xl" />
@@ -468,13 +469,6 @@ export default function Home() {
               <AnimatedDemo />
             </div>
 
-            {/* Scroll indicator */}
-            <div className="absolute bottom-8 flex flex-col items-center gap-2 animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
-              <span className="text-[10px] uppercase tracking-widest text-white/20">Scroll</span>
-              <svg className="h-4 w-4 text-white/20 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-            </div>
           </section>
 
           {/* ── Section 2: Features ───────────────────────── */}
