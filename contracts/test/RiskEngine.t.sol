@@ -14,6 +14,8 @@ contract MockRiskEngine is IRiskEngine {
     uint256 public lastAmountIn;
     uint256 public lastReserveIn;
     uint256 public lastReserveOut;
+    address public lastTokenIn;
+    address public lastTokenOut;
     uint256 public callCount;
 
     function setNextResult(uint8 _riskLevel, uint256 _score) external {
@@ -24,16 +26,20 @@ contract MockRiskEngine is IRiskEngine {
     function evaluate(
         uint256 amountIn,
         uint256 reserveIn,
-        uint256 reserveOut
+        uint256 reserveOut,
+        address tokenIn,
+        address tokenOut
     ) external override returns (uint8 riskLevel, uint256 score, uint256 priceImpact, uint256 volatility) {
         lastAmountIn = amountIn;
         lastReserveIn = reserveIn;
         lastReserveOut = reserveOut;
+        lastTokenIn = tokenIn;
+        lastTokenOut = tokenOut;
         callCount++;
         return (nextRiskLevel, nextScore, 100, 50);
     }
 
-    function getStats() external pure override returns (uint256 ma20, uint256 volatility, uint256 tradeCount) {
+    function getStats(address, address) external pure override returns (uint256 ma20, uint256 volatility, uint256 tradeCount) {
         return (10000, 50, 1);
     }
 }

@@ -84,6 +84,22 @@ contract IntentExecutor {
         emit RiskEngineUpdated(old, _riskEngine);
     }
 
+    function _getReserves(address tokenIn, address tokenOut) internal view returns (uint256 reserveIn, uint256 reserveOut) {
+        (, , uint256 r0, uint256 r1) = dex.getPool(tokenIn, tokenOut);
+        (address t0, ) = tokenIn < tokenOut ? (tokenIn, tokenOut) : (tokenOut, tokenIn);
+        return tokenIn == t0 ? (r0, r1) : (r1, r0);
+    }
+
+    function _checkRisk(address tokenIn, address tokenOut, uint256 amountIn) internal {
+        (uint256 reserveIn, uint256 reserveOut) = _getReserves(tokenIn, tokenOut);
+
+        (uint8 riskLevel, uint256 score, uint256 priceImpact, uint256 volatility) =
+            riskEngine.evaluate(amountIn, reserveIn, reserveOut, tokenIn, tokenOut);
+
+        emit RiskChecked(msg.sender, riskLevel, score, priceImpact, volatility);
+        require(riskLevel < RISK_RED, "IntentExecutor: risk too high");
+    }
+
     function executeSwap(
         address tokenIn,
         address tokenOut,
@@ -95,16 +111,7 @@ contract IntentExecutor {
 
         // On-chain risk check via PVM Rust Risk Engine
         if (address(riskEngine) != address(0)) {
-            // Get pool reserves for risk evaluation
-            (, , uint256 r0, uint256 r1) = dex.getPool(tokenIn, tokenOut);
-            (address t0, ) = tokenIn < tokenOut ? (tokenIn, tokenOut) : (tokenOut, tokenIn);
-            (uint256 reserveIn, uint256 reserveOut) = tokenIn == t0 ? (r0, r1) : (r1, r0);
-
-            (uint8 riskLevel, uint256 score, uint256 priceImpact, uint256 volatility) =
-                riskEngine.evaluate(amountIn, reserveIn, reserveOut);
-
-            emit RiskChecked(msg.sender, riskLevel, score, priceImpact, volatility);
-            require(riskLevel < RISK_RED, "IntentExecutor: risk too high");
+            _checkRisk(tokenIn, tokenOut, amountIn);
         }
 
         // Transfer tokenIn from user to this contract

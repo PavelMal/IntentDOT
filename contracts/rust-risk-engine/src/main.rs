@@ -2,14 +2,16 @@
 //!
 //! A PVM (PolkaVM) smart contract written in Rust that evaluates swap risk
 //! using price impact, moving average deviation, and historical volatility.
+//! Maintains per-pool price history (ring buffer of 20 prices).
 //!
 //! Called by IntentExecutor (Solidity) before every swap. RED risk = revert.
 //!
 //! Solidity interface:
-//!   function evaluate(uint256 amountIn, uint256 reserveIn, uint256 reserveOut)
+//!   function evaluate(uint256 amountIn, uint256 reserveIn, uint256 reserveOut, address tokenIn, address tokenOut)
 //!     external returns (uint8 riskLevel, uint256 score, uint256 priceImpact, uint256 volatility)
 //!
-//!   function getStats() external view returns (uint256 ma20, uint256 volatility, uint256 tradeCount)
+//!   function getStats(address tokenIn, address tokenOut)
+//!     external view returns (uint256 ma20, uint256 volatility, uint256 tradeCount)
 
 #![no_main]
 #![no_std]
@@ -34,7 +36,7 @@ const BPS: u64 = 10_000;
 /// Price history window size
 const WINDOW_SIZE: usize = 20;
 
-/// Risk thresholds (basis points)
+/// Risk thresholds
 const GREEN_MAX: u64 = 39;
 const YELLOW_MAX: u64 = 69;
 
@@ -44,42 +46,55 @@ const WEIGHT_DEVIATION: u64 = 30;
 const WEIGHT_VOLATILITY: u64 = 30;
 
 // ============================================================
-// Storage keys (32-byte)
+// Per-pool storage key derivation
 // ============================================================
 
-/// Storage key for price ring buffer: 20 slots at keys 0x01..0x14
-/// Each slot stores a u64 price in basis points
-const PRICE_BASE_KEY: u8 = 0x01;
+/// Derive a pool identifier from two token addresses (sorted).
+/// Returns a 20-byte pool_id from sorted(tokenIn, tokenOut).
+fn pool_id(token_a: &[u8; 20], token_b: &[u8; 20]) -> [u8; 20] {
+    // Sort addresses to ensure (A,B) == (B,A)
+    let (lo, hi) = if token_a < token_b {
+        (token_a, token_b)
+    } else {
+        (token_b, token_a)
+    };
+    // XOR the two addresses as a simple deterministic combiner
+    // Each pool gets a unique 20-byte key since sorted pairs are unique
+    let mut id = [0u8; 20];
+    let mut i = 0;
+    while i < 20 {
+        id[i] = lo[i] ^ hi[i];
+        // Mix in position to avoid XOR collisions (a^b == c^d)
+        id[i] = id[i].wrapping_add(lo[i]).wrapping_add(i as u8);
+        i += 1;
+    }
+    id
+}
 
-/// Storage key for write index (0..19)
-const INDEX_KEY: [u8; 32] = key(0xA0);
+/// Storage key for price slot: pool_id[0..20] + 0x01 + index as last byte
+fn pool_price_key(pid: &[u8; 20], index: usize) -> [u8; 32] {
+    let mut k = [0u8; 32];
+    k[0..20].copy_from_slice(pid);
+    k[20] = 0x01; // price namespace
+    k[31] = index as u8;
+    k
+}
+
+/// Storage key for write index
+fn pool_index_key(pid: &[u8; 20]) -> [u8; 32] {
+    let mut k = [0u8; 32];
+    k[0..20].copy_from_slice(pid);
+    k[20] = 0xA0;
+    k
+}
 
 /// Storage key for trade count
-const COUNT_KEY: [u8; 32] = key(0xA1);
-
-/// Helper: create a 32-byte storage key from a single byte tag
-const fn key(tag: u8) -> [u8; 32] {
+fn pool_count_key(pid: &[u8; 20]) -> [u8; 32] {
     let mut k = [0u8; 32];
-    k[31] = tag;
+    k[0..20].copy_from_slice(pid);
+    k[20] = 0xA1;
     k
 }
-
-/// Helper: create price slot key from index (0..19)
-const fn price_key(index: usize) -> [u8; 32] {
-    let mut k = [0u8; 32];
-    k[31] = PRICE_BASE_KEY + index as u8;
-    k
-}
-
-// ============================================================
-// Selectors (keccak256 first 4 bytes)
-// ============================================================
-
-/// evaluate(uint256,uint256,uint256) → keccak256 = 0x7af23a7f
-const SEL_EVALUATE: [u8; 4] = [0x7a, 0xf2, 0x3a, 0x7f];
-
-/// getStats() → keccak256 = 0xc59d4847
-const SEL_GET_STATS: [u8; 4] = [0xc5, 0x9d, 0x48, 0x47];
 
 // ============================================================
 // Storage helpers
@@ -108,15 +123,24 @@ fn u64_from_be32(buf: &[u8; 32]) -> u64 {
 }
 
 /// Decode u128 from a 32-byte ABI-encoded calldata chunk
-/// Reads last 16 bytes to support values up to ~3.4e38 (handles wei amounts)
 fn decode_u128(calldata: &[u8], offset: usize) -> u128 {
-    let start = offset + 16; // last 16 bytes of 32-byte word
+    let start = offset + 16;
     if start + 16 > calldata.len() {
         return 0;
     }
     let mut bytes = [0u8; 16];
     bytes.copy_from_slice(&calldata[start..start + 16]);
     u128::from_be_bytes(bytes)
+}
+
+/// Decode address (20 bytes) from a 32-byte ABI-encoded calldata chunk
+fn decode_address(calldata: &[u8], offset: usize) -> [u8; 20] {
+    let start = offset + 12; // address is right-aligned in 32 bytes
+    let mut addr = [0u8; 20];
+    if start + 20 <= calldata.len() {
+        addr.copy_from_slice(&calldata[start..start + 20]);
+    }
+    addr
 }
 
 // ============================================================
@@ -143,100 +167,88 @@ fn abs_diff(a: u64, b: u64) -> u64 {
 }
 
 // ============================================================
-// Risk computation
+// Risk computation (per-pool)
 // ============================================================
 
 /// Calculate price impact in basis points for constant-product AMM with 0.3% fee
-/// Simplified formula that avoids u128 overflow:
-///   impact_bps = (3 * reserveIn + 997 * amountIn) * BPS / (1000 * reserveIn + 997 * amountIn)
-/// This captures both slippage and fee impact.
-fn calc_price_impact(amount_in: u128, reserve_in: u128, _reserve_out: u128) -> u64 {
+fn calc_price_impact(amount_in: u128, reserve_in: u128) -> u64 {
     if reserve_in == 0 || amount_in == 0 {
-        return BPS; // 100% impact = max risk
+        return BPS;
     }
-
-    // fee_component = 3 * reserveIn (from 0.3% fee)
-    // slippage_component = 997 * amountIn (from pool depth)
     let numer = 3u128 * reserve_in + 997u128 * amount_in;
     let denom = 1000u128 * reserve_in + 997u128 * amount_in;
-
     if denom == 0 {
         return BPS;
     }
-
     (numer * BPS as u128 / denom) as u64
 }
 
-/// Calculate MA20 from stored price history
-fn calc_ma20() -> u64 {
-    let count = read_u64(&COUNT_KEY);
+/// Calculate MA20 from stored price history for a specific pool
+fn calc_ma20(pid: &[u8; 20]) -> u64 {
+    let count_key = pool_count_key(pid);
+    let count = read_u64(&count_key);
     let n = if count < WINDOW_SIZE as u64 { count } else { WINDOW_SIZE as u64 };
     if n == 0 {
         return 0;
     }
     let mut sum: u64 = 0;
     for i in 0..n as usize {
-        sum = sum.saturating_add(read_u64(&price_key(i)));
+        sum = sum.saturating_add(read_u64(&pool_price_key(pid, i)));
     }
     sum / n
 }
 
-/// Calculate volatility (standard deviation) in basis points
-fn calc_volatility() -> u64 {
-    let count = read_u64(&COUNT_KEY);
+/// Calculate volatility (standard deviation) in basis points for a specific pool
+fn calc_volatility(pid: &[u8; 20]) -> u64 {
+    let count_key = pool_count_key(pid);
+    let count = read_u64(&count_key);
     let n = if count < WINDOW_SIZE as u64 { count } else { WINDOW_SIZE as u64 };
     if n < 2 {
         return 0;
     }
 
-    let ma = calc_ma20();
+    let ma = calc_ma20(pid);
     if ma == 0 {
         return 0;
     }
 
-    // Variance = sum((price - ma)^2) / n
     let mut variance_sum: u64 = 0;
     for i in 0..n as usize {
-        let price = read_u64(&price_key(i));
+        let price = read_u64(&pool_price_key(pid, i));
         let diff = abs_diff(price, ma);
-        // Scale down to avoid overflow: diff is in BPS range
         variance_sum = variance_sum.saturating_add(diff.saturating_mul(diff) / BPS);
     }
     let variance = variance_sum / n;
-
-    // Stddev = sqrt(variance) * sqrt(BPS) to get back to BPS scale
-    // Actually: stddev_bps = sqrt(variance * BPS)
     isqrt(variance.saturating_mul(BPS))
 }
 
-/// Store current spot price in ring buffer
-fn record_price(reserve_in: u128, reserve_out: u128) {
+/// Store current spot price in ring buffer for a specific pool
+fn record_price(pid: &[u8; 20], reserve_in: u128, reserve_out: u128) {
     if reserve_in == 0 {
         return;
     }
     let price_bps = ((reserve_out * BPS as u128) / reserve_in) as u64;
 
-    let index = read_u64(&INDEX_KEY) as usize % WINDOW_SIZE;
-    write_u64(&price_key(index), price_bps);
+    let idx_key = pool_index_key(pid);
+    let index = read_u64(&idx_key) as usize % WINDOW_SIZE;
+    write_u64(&pool_price_key(pid, index), price_bps);
 
     let new_index = (index + 1) % WINDOW_SIZE;
-    write_u64(&INDEX_KEY, new_index as u64);
+    write_u64(&idx_key, new_index as u64);
 
-    let count = read_u64(&COUNT_KEY);
+    let cnt_key = pool_count_key(pid);
+    let count = read_u64(&cnt_key);
     if count < WINDOW_SIZE as u64 {
-        write_u64(&COUNT_KEY, count + 1);
+        write_u64(&cnt_key, count + 1);
     }
 }
 
-/// Evaluate swap risk
-/// Returns: (risk_level, composite_score, price_impact_bps, volatility_bps)
-///   risk_level: 0=GREEN, 1=YELLOW, 2=RED
-fn evaluate(amount_in: u128, reserve_in: u128, reserve_out: u128) -> (u8, u64, u64, u64) {
-    let price_impact = calc_price_impact(amount_in, reserve_in, reserve_out);
-    let ma = calc_ma20();
-    let volatility = calc_volatility();
+/// Evaluate swap risk for a specific pool
+fn evaluate(amount_in: u128, reserve_in: u128, reserve_out: u128, pid: &[u8; 20]) -> (u8, u64, u64, u64) {
+    let price_impact = calc_price_impact(amount_in, reserve_in);
+    let ma = calc_ma20(pid);
+    let volatility = calc_volatility(pid);
 
-    // MA deviation: how far current spot price is from MA20
     let current_price_bps = if reserve_in > 0 {
         ((reserve_out * BPS as u128) / reserve_in) as u64
     } else {
@@ -248,27 +260,20 @@ fn evaluate(amount_in: u128, reserve_in: u128, reserve_out: u128) -> (u8, u64, u
         0
     };
 
-    // Normalize components to 0-100 scale
-    // price_impact: 0bps=0, 500bps(5%)=50, 1000bps(10%)=100
     let impact_score = if price_impact >= 1000 { 100 } else { price_impact / 10 };
-    // deviation: 0bps=0, 500bps=50, 1000bps=100
     let dev_score = if deviation >= 1000 { 100 } else { deviation / 10 };
-    // volatility: 0bps=0, 500bps=50, 1000bps=100
     let vol_score = if volatility >= 1000 { 100 } else { volatility / 10 };
 
-    // Weighted composite score (0-100)
     let composite = (impact_score * WEIGHT_IMPACT + dev_score * WEIGHT_DEVIATION + vol_score * WEIGHT_VOLATILITY) / 100;
 
-    // Record price for future MA/volatility calculations
-    record_price(reserve_in, reserve_out);
+    record_price(pid, reserve_in, reserve_out);
 
-    // Determine risk level
     let risk_level = if composite <= GREEN_MAX {
-        0 // GREEN
+        0
     } else if composite <= YELLOW_MAX {
-        1 // YELLOW
+        1
     } else {
-        2 // RED
+        2
     };
 
     (risk_level, composite, price_impact, volatility)
@@ -290,54 +295,58 @@ pub extern "C" fn call() {
         api::return_value(ReturnFlags::REVERT, b"Input too short");
     }
 
-    // Read selector (first 4 bytes)
     let mut selector = [0u8; 4];
     api::call_data_copy(&mut selector, 0);
 
-    match selector {
-        SEL_EVALUATE => {
-            // evaluate(uint256 amountIn, uint256 reserveIn, uint256 reserveOut)
-            // Calldata: 4 + 32 + 32 + 32 = 100 bytes
-            if len < 100 {
-                api::return_value(ReturnFlags::REVERT, b"Invalid calldata length");
-            }
-            let mut calldata = [0u8; 100];
-            api::call_data_copy(&mut calldata, 0);
-
-            let amount_in = decode_u128(&calldata, 4);
-            let reserve_in = decode_u128(&calldata, 36);
-            let reserve_out = decode_u128(&calldata, 68);
-
-            let (risk_level, score, price_impact, volatility) = evaluate(amount_in, reserve_in, reserve_out);
-
-            // ABI encode return: 4 x uint256 = 128 bytes
-            let mut output = [0u8; 128];
-            // risk_level (uint8 padded to uint256)
-            output[31] = risk_level;
-            // score
-            output[56..64].copy_from_slice(&score.to_be_bytes());
-            // price_impact
-            output[88..96].copy_from_slice(&price_impact.to_be_bytes());
-            // volatility
-            output[120..128].copy_from_slice(&volatility.to_be_bytes());
-
-            api::return_value(ReturnFlags::empty(), &output);
+    // evaluate(uint256,uint256,uint256,address,address) = 0xabb0e06c
+    if selector == [0xab, 0xb0, 0xe0, 0x6c] {
+        // Calldata: 4 + 32*3 + 32*2 = 164 bytes
+        if len < 164 {
+            api::return_value(ReturnFlags::REVERT, b"Invalid calldata length");
         }
-        SEL_GET_STATS => {
-            // getStats() → (uint256 ma20, uint256 volatility, uint256 tradeCount)
-            let ma = calc_ma20();
-            let vol = calc_volatility();
-            let count = read_u64(&COUNT_KEY);
+        let mut calldata = [0u8; 164];
+        api::call_data_copy(&mut calldata, 0);
 
-            let mut output = [0u8; 96];
-            output[24..32].copy_from_slice(&ma.to_be_bytes());
-            output[56..64].copy_from_slice(&vol.to_be_bytes());
-            output[88..96].copy_from_slice(&count.to_be_bytes());
+        let amount_in = decode_u128(&calldata, 4);
+        let reserve_in = decode_u128(&calldata, 36);
+        let reserve_out = decode_u128(&calldata, 68);
+        let token_in = decode_address(&calldata, 100);
+        let token_out = decode_address(&calldata, 132);
 
-            api::return_value(ReturnFlags::empty(), &output);
+        let pid = pool_id(&token_in, &token_out);
+        let (risk_level, score, price_impact, volatility) = evaluate(amount_in, reserve_in, reserve_out, &pid);
+
+        let mut output = [0u8; 128];
+        output[31] = risk_level;
+        output[56..64].copy_from_slice(&score.to_be_bytes());
+        output[88..96].copy_from_slice(&price_impact.to_be_bytes());
+        output[120..128].copy_from_slice(&volatility.to_be_bytes());
+
+        api::return_value(ReturnFlags::empty(), &output);
+    }
+    // getStats(address,address) = 0x84dfb9ed
+    else if selector == [0x84, 0xdf, 0xb9, 0xed] {
+        if len < 68 {
+            api::return_value(ReturnFlags::REVERT, b"Invalid calldata length");
         }
-        _ => {
-            api::return_value(ReturnFlags::REVERT, b"Unknown selector");
-        }
+        let mut calldata = [0u8; 68];
+        api::call_data_copy(&mut calldata, 0);
+
+        let token_in = decode_address(&calldata, 4);
+        let token_out = decode_address(&calldata, 36);
+        let pid = pool_id(&token_in, &token_out);
+
+        let ma = calc_ma20(&pid);
+        let vol = calc_volatility(&pid);
+        let count = read_u64(&pool_count_key(&pid));
+
+        let mut output = [0u8; 96];
+        output[24..32].copy_from_slice(&ma.to_be_bytes());
+        output[56..64].copy_from_slice(&vol.to_be_bytes());
+        output[88..96].copy_from_slice(&count.to_be_bytes());
+
+        api::return_value(ReturnFlags::empty(), &output);
+    } else {
+        api::return_value(ReturnFlags::REVERT, b"Unknown selector");
     }
 }

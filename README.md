@@ -102,9 +102,9 @@ forge script script/Deploy.s.sol \
 | USDT Token | `0x12e41FDB22Bc661719B4D7445952e1b51C429dDB` |
 | USDC Token | `0x540De5E6237395b63cFd9C383C47F5F32FAb3123` |
 | MockDEX | `0x5b2810428f3DA3400f111f516560EE63d44c336A` |
-| IntentExecutor V3 | `0xc541A0beeF384EB491830ad4efae9EA9819F475C` |
-| TokenFactory | `0x80a55E2526480fc25973Dd50600390C5926713c6` |
-| RiskEngine (PVM Rust) | `0x47DEe4a8d8bad545cBC824eb5504f2FC16aeeF4B` |
+| IntentExecutor V3 | `0xdD44bd254dD0bBB6Bfe7C7C062aDA4150e1546d7` |
+| TokenFactory | `0x1Ba4FDBab1C786Bd0aE8c4105711b90dDf87FCDD` |
+| RiskEngine (PVM Rust) | `0xEE6deEd91F29143521a4443553479A5fB97BdfA7` |
 
 **Network:** Polkadot Hub TestNet (Paseo)
 - Chain ID: `420420417`
