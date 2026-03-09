@@ -118,6 +118,7 @@ export function Chat() {
         amountIn: intent.amount,
         amountOut: preview.amountOut,
         explorerUrl: getExplorerUrl(result.executeTxHash),
+        onChainRisk: result.onChainRisk,
       };
       setMessages((prev) => prev.filter((m) => m.preview !== preview));
       addMessage({ role: "receipt", content: "", receipt });

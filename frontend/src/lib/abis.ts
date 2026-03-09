@@ -189,6 +189,17 @@ export const intentExecutorAbi = [
       { name: "status", type: "bool", indexed: false },
     ],
   },
+  {
+    name: "RiskChecked",
+    type: "event",
+    inputs: [
+      { name: "user", type: "address", indexed: true },
+      { name: "riskLevel", type: "uint8", indexed: false },
+      { name: "score", type: "uint256", indexed: false },
+      { name: "priceImpact", type: "uint256", indexed: false },
+      { name: "volatility", type: "uint256", indexed: false },
+    ],
+  },
 ] as const;
 
 export const tokenFactoryAbi = [

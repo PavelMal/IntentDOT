@@ -6,7 +6,18 @@ interface Props {
   receipt: SwapReceipt;
 }
 
+const RISK_LABELS = ["GREEN", "YELLOW", "RED"] as const;
+const RISK_COLORS = {
+  GREEN: { bg: "bg-green-500/10", border: "border-green-500/30", text: "text-green-400", dot: "bg-green-400" },
+  YELLOW: { bg: "bg-yellow-500/10", border: "border-yellow-500/30", text: "text-yellow-400", dot: "bg-yellow-400" },
+  RED: { bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-400", dot: "bg-red-400" },
+} as const;
+
 export function SwapReceiptCard({ receipt }: Props) {
+  const risk = receipt.onChainRisk;
+  const riskLabel = risk ? RISK_LABELS[risk.riskLevel] ?? "GREEN" : null;
+  const colors = riskLabel ? RISK_COLORS[riskLabel] : null;
+
   return (
     <div className="mx-auto max-w-md rounded-2xl border border-polkadot-green/20 bg-polkadot-green/[0.03] backdrop-blur-xl p-5 glow-green">
       <div className="mb-4 flex items-center justify-center gap-2">
@@ -39,6 +50,29 @@ export function SwapReceiptCard({ receipt }: Props) {
           </p>
         </div>
       </div>
+
+      {risk && colors && riskLabel && (
+        <div className={`mb-4 rounded-xl ${colors.bg} border ${colors.border} p-3`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`h-2 w-2 rounded-full ${colors.dot}`} />
+              <span className={`text-xs font-semibold uppercase tracking-wider ${colors.text}`}>
+                {riskLabel}
+              </span>
+              <span className="text-[11px] text-white/40">
+                Score {risk.score}/100
+              </span>
+            </div>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-white/30">
+              On-chain verified
+            </span>
+          </div>
+          <div className="mt-2 flex gap-4 text-[11px] text-white/40">
+            <span>Impact: {(risk.priceImpact / 100).toFixed(2)}%</span>
+            {risk.volatility > 0 && <span>Vol: {(risk.volatility / 100).toFixed(2)}%</span>}
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-between items-center text-xs px-1">
         <span className="text-white/30">Transaction</span>

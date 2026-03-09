@@ -3,10 +3,11 @@
 import { useCallback, useState } from "react";
 import { useAccount, usePublicClient } from "wagmi";
 import { getWalletClient } from "wagmi/actions";
-import { parseUnits, formatUnits, type Hash } from "viem";
+import { parseUnits, formatUnits, decodeEventLog, type Hash } from "viem";
 import { config, polkadotHubTestnet } from "@/lib/wagmi";
 import { CONTRACTS, TOKEN_MAP } from "@/lib/contracts";
 import { mockERC20Abi, intentExecutorAbi } from "@/lib/abis";
+import type { OnChainRisk } from "@/lib/types";
 
 export type SwapStatus =
   | "idle"
@@ -22,6 +23,7 @@ export interface SwapResult {
   executeTxHash?: Hash;
   amountOut?: string;
   error?: string;
+  onChainRisk?: OnChainRisk;
 }
 
 /**
@@ -128,20 +130,54 @@ export function useSwapExecution() {
         const receipt = await publicClient.waitForTransactionReceipt({ hash: executeTxHash });
 
         if (receipt.status !== "success") {
+          // Check if it was a risk revert
+          const isRiskRevert = receipt.logs.length === 0;
           const r: SwapResult = {
             status: "error",
             approveTxHash,
             executeTxHash,
-            error: "Transaction reverted on-chain. Possible slippage exceeded or insufficient liquidity.",
+            error: isRiskRevert
+              ? "Transaction blocked by on-chain Risk Engine (risk too high)."
+              : "Transaction reverted on-chain. Possible slippage exceeded or insufficient liquidity.",
           };
           setResult(r);
           return r;
+        }
+
+        // Parse RiskChecked event from receipt logs
+        let onChainRisk: OnChainRisk | undefined;
+        for (const log of receipt.logs) {
+          try {
+            const decoded = decodeEventLog({
+              abi: intentExecutorAbi,
+              data: log.data,
+              topics: log.topics,
+            });
+            if (decoded.eventName === "RiskChecked") {
+              const args = decoded.args as {
+                riskLevel: number;
+                score: bigint;
+                priceImpact: bigint;
+                volatility: bigint;
+              };
+              onChainRisk = {
+                riskLevel: args.riskLevel,
+                score: Number(args.score),
+                priceImpact: Number(args.priceImpact),
+                volatility: Number(args.volatility),
+              };
+              break;
+            }
+          } catch {
+            // Not a RiskChecked event, skip
+          }
         }
 
         const r: SwapResult = {
           status: "success",
           approveTxHash,
           executeTxHash,
+          onChainRisk,
         };
         setResult(r);
         return r;

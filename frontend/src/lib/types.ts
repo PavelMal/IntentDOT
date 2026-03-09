@@ -51,6 +51,13 @@ export interface TokenCreatePreview {
   intent: ParsedIntent;
 }
 
+export interface OnChainRisk {
+  riskLevel: number; // 0=GREEN, 1=YELLOW, 2=RED
+  score: number;
+  priceImpact: number; // basis points
+  volatility: number; // basis points
+}
+
 export interface SwapReceipt {
   txHash: string;
   tokenFrom: string;
@@ -58,6 +65,7 @@ export interface SwapReceipt {
   amountIn: number;
   amountOut: string;
   explorerUrl: string;
+  onChainRisk?: OnChainRisk;
 }
 
 export interface TransferReceipt {
