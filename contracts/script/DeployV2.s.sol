@@ -15,7 +15,7 @@ contract DeployV2Script is Script {
         address dot = 0x0Fb72340AA780c00823E0a80429327af63E8d2Fc;
         address usdt = 0x12e41FDB22Bc661719B4D7445952e1b51C429dDB;
         address usdc = 0x540De5E6237395b63cFd9C383C47F5F32FAb3123;
-        address riskEngine = 0x33B154E3fE00e4e9733c1C6ca771E7Ae24B091E9;
+        address riskEngine = 0x47DEe4a8d8bad545cBC824eb5504f2FC16aeeF4B;
 
         vm.startBroadcast(deployerPrivateKey);
 

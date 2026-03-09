@@ -107,15 +107,16 @@ fn u64_from_be32(buf: &[u8; 32]) -> u64 {
     u64::from_be_bytes(bytes)
 }
 
-/// Decode u64 from a 32-byte ABI-encoded calldata chunk
-fn decode_u64(calldata: &[u8], offset: usize) -> u64 {
-    let start = offset + 24; // last 8 bytes of 32-byte word
-    if start + 8 > calldata.len() {
+/// Decode u128 from a 32-byte ABI-encoded calldata chunk
+/// Reads last 16 bytes to support values up to ~3.4e38 (handles wei amounts)
+fn decode_u128(calldata: &[u8], offset: usize) -> u128 {
+    let start = offset + 16; // last 16 bytes of 32-byte word
+    if start + 16 > calldata.len() {
         return 0;
     }
-    let mut bytes = [0u8; 8];
-    bytes.copy_from_slice(&calldata[start..start + 8]);
-    u64::from_be_bytes(bytes)
+    let mut bytes = [0u8; 16];
+    bytes.copy_from_slice(&calldata[start..start + 16]);
+    u128::from_be_bytes(bytes)
 }
 
 // ============================================================
@@ -145,40 +146,25 @@ fn abs_diff(a: u64, b: u64) -> u64 {
 // Risk computation
 // ============================================================
 
-/// Calculate price impact in basis points
-/// price_impact = |spot_price - exec_price| / spot_price * BPS
-fn calc_price_impact(amount_in: u64, reserve_in: u64, reserve_out: u64) -> u64 {
-    if reserve_in == 0 || reserve_out == 0 || amount_in == 0 {
+/// Calculate price impact in basis points for constant-product AMM with 0.3% fee
+/// Simplified formula that avoids u128 overflow:
+///   impact_bps = (3 * reserveIn + 997 * amountIn) * BPS / (1000 * reserveIn + 997 * amountIn)
+/// This captures both slippage and fee impact.
+fn calc_price_impact(amount_in: u128, reserve_in: u128, _reserve_out: u128) -> u64 {
+    if reserve_in == 0 || amount_in == 0 {
         return BPS; // 100% impact = max risk
     }
 
-    // Spot price: reserve_out / reserve_in (scaled by BPS)
-    let spot_price_bps = (reserve_out as u128 * BPS as u128) / reserve_in as u128;
+    // fee_component = 3 * reserveIn (from 0.3% fee)
+    // slippage_component = 997 * amountIn (from pool depth)
+    let numer = 3u128 * reserve_in + 997u128 * amount_in;
+    let denom = 1000u128 * reserve_in + 997u128 * amount_in;
 
-    // Execution price with 0.3% fee (UniV2 formula)
-    // amount_out = (amount_in * 997 * reserve_out) / (reserve_in * 1000 + amount_in * 997)
-    let amount_in_with_fee = amount_in as u128 * 997;
-    let numerator = amount_in_with_fee * reserve_out as u128;
-    let denominator = reserve_in as u128 * 1000 + amount_in_with_fee;
-    if denominator == 0 {
-        return BPS;
-    }
-    let amount_out = numerator / denominator;
-    if amount_out == 0 {
+    if denom == 0 {
         return BPS;
     }
 
-    // Execution price in BPS
-    let exec_price_bps = (amount_out * BPS as u128) / amount_in as u128;
-
-    // Price impact
-    let diff = if spot_price_bps > exec_price_bps {
-        spot_price_bps - exec_price_bps
-    } else {
-        exec_price_bps - spot_price_bps
-    };
-
-    (diff * BPS as u128 / spot_price_bps) as u64
+    (numer * BPS as u128 / denom) as u64
 }
 
 /// Calculate MA20 from stored price history
@@ -224,11 +210,11 @@ fn calc_volatility() -> u64 {
 }
 
 /// Store current spot price in ring buffer
-fn record_price(reserve_in: u64, reserve_out: u64) {
+fn record_price(reserve_in: u128, reserve_out: u128) {
     if reserve_in == 0 {
         return;
     }
-    let price_bps = ((reserve_out as u128 * BPS as u128) / reserve_in as u128) as u64;
+    let price_bps = ((reserve_out * BPS as u128) / reserve_in) as u64;
 
     let index = read_u64(&INDEX_KEY) as usize % WINDOW_SIZE;
     write_u64(&price_key(index), price_bps);
@@ -245,14 +231,14 @@ fn record_price(reserve_in: u64, reserve_out: u64) {
 /// Evaluate swap risk
 /// Returns: (risk_level, composite_score, price_impact_bps, volatility_bps)
 ///   risk_level: 0=GREEN, 1=YELLOW, 2=RED
-fn evaluate(amount_in: u64, reserve_in: u64, reserve_out: u64) -> (u8, u64, u64, u64) {
+fn evaluate(amount_in: u128, reserve_in: u128, reserve_out: u128) -> (u8, u64, u64, u64) {
     let price_impact = calc_price_impact(amount_in, reserve_in, reserve_out);
     let ma = calc_ma20();
     let volatility = calc_volatility();
 
     // MA deviation: how far current spot price is from MA20
     let current_price_bps = if reserve_in > 0 {
-        ((reserve_out as u128 * BPS as u128) / reserve_in as u128) as u64
+        ((reserve_out * BPS as u128) / reserve_in) as u64
     } else {
         0
     };
@@ -318,9 +304,9 @@ pub extern "C" fn call() {
             let mut calldata = [0u8; 100];
             api::call_data_copy(&mut calldata, 0);
 
-            let amount_in = decode_u64(&calldata, 4);
-            let reserve_in = decode_u64(&calldata, 36);
-            let reserve_out = decode_u64(&calldata, 68);
+            let amount_in = decode_u128(&calldata, 4);
+            let reserve_in = decode_u128(&calldata, 36);
+            let reserve_out = decode_u128(&calldata, 68);
 
             let (risk_level, score, price_impact, volatility) = evaluate(amount_in, reserve_in, reserve_out);
 

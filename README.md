@@ -104,7 +104,7 @@ forge script script/Deploy.s.sol \
 | MockDEX | `0x5b2810428f3DA3400f111f516560EE63d44c336A` |
 | IntentExecutor V3 | `0xc541A0beeF384EB491830ad4efae9EA9819F475C` |
 | TokenFactory | `0x80a55E2526480fc25973Dd50600390C5926713c6` |
-| RiskEngine (PVM Rust) | `0x33B154E3fE00e4e9733c1C6ca771E7Ae24B091E9` |
+| RiskEngine (PVM Rust) | `0x47DEe4a8d8bad545cBC824eb5504f2FC16aeeF4B` |
 
 **Network:** Polkadot Hub TestNet (Paseo)
 - Chain ID: `420420417`
