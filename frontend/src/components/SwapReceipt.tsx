@@ -89,8 +89,8 @@ export function SwapReceiptCard({ receipt }: Props) {
                       </button>
                     </div>
                     <p className="text-[11px] leading-relaxed text-white/50 mb-3">
-                      Every swap is verified by a <span className="text-polkadot-cyan/80 font-medium">Rust smart contract</span> running
-                      natively on Polkadot&apos;s PolkaVM. It evaluates three risk factors in real-time:
+                      Your swap passed an on-chain safety check powered by a <span className="text-polkadot-cyan/80 font-medium">Rust smart contract</span> on
+                      Polkadot. It scores three risk factors before every trade:
                     </p>
                     <div className="space-y-2 text-[11px]">
                       <div className="flex items-start gap-2">
