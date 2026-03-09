@@ -79,7 +79,7 @@ export function SwapReceiptCard({ receipt }: Props) {
               {showTooltip && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowTooltip(false)} />
-                  <div className="absolute right-0 top-6 z-50 w-72 rounded-xl border border-white/10 bg-[#1a1a2e] p-4 shadow-2xl">
+                  <div className="absolute right-0 bottom-8 z-50 w-72 rounded-xl border border-white/10 bg-[#1a1a2e] p-4 shadow-2xl">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs font-semibold text-white/80">How does it work?</p>
                       <button onClick={() => setShowTooltip(false)} className="text-white/30 hover:text-white/60">
