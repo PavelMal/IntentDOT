@@ -75,11 +75,11 @@ const fn price_key(index: usize) -> [u8; 32] {
 // Selectors (keccak256 first 4 bytes)
 // ============================================================
 
-/// evaluate(uint256,uint256,uint256) → keccak256 = 0xc5c2449f
-const SEL_EVALUATE: [u8; 4] = [0xc5, 0xc2, 0x44, 0x9f];
+/// evaluate(uint256,uint256,uint256) → keccak256 = 0x7af23a7f
+const SEL_EVALUATE: [u8; 4] = [0x7a, 0xf2, 0x3a, 0x7f];
 
-/// getStats() → keccak256 = 0xc0159762
-const SEL_GET_STATS: [u8; 4] = [0xc0, 0x15, 0x97, 0x62];
+/// getStats() → keccak256 = 0xc59d4847
+const SEL_GET_STATS: [u8; 4] = [0xc5, 0x9d, 0x48, 0x47];
 
 // ============================================================
 // Storage helpers
