@@ -1,0 +1,6 @@
+[build]
+target = "riscv64emac-unknown-none-polkavm.json"
+rustflags = ["-Zunstable-options", "-Cpanic=immediate-abort"]
+
+[unstable]
+build-std = ["core", "alloc"]
