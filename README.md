@@ -80,7 +80,7 @@ forge script script/Deploy.s.sol \
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 14, Tailwind CSS, wagmi v2 |
+| Frontend | Next.js 14, Tailwind CSS, wagmi v2, [w3wallets](https://github.com/Maksandre/w3wallets) + Playwright (E2E) |
 | AI | Anthropic Claude / OpenAI GPT-4o (structured output) |
 | Contracts | Solidity 0.8.19, Foundry (nightly) |
 | Network | Polkadot Hub TestNet (chain 420420417) |

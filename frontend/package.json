@@ -30,6 +30,8 @@
     "tailwindcss": "^3.4.19",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@playwright/test": "^1.52.0",
+    "w3wallets": "^0.3.0"
   }
 }
