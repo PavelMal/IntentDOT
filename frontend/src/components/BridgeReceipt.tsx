@@ -41,12 +41,14 @@ export function BridgeReceiptCard({ receipt }: Props) {
       </div>
 
       <div className="space-y-2 text-xs px-1">
-        <div className="flex justify-between items-center">
-          <span className="text-white/30">Your relay address</span>
-          <span className="font-mono text-polkadot-cyan/80 text-[10px]">
-            {receipt.beneficiarySS58.slice(0, 8)}...{receipt.beneficiarySS58.slice(-6)}
-          </span>
-        </div>
+        {receipt.beneficiarySS58 && (
+          <div className="flex justify-between items-center">
+            <span className="text-white/30">Your relay address</span>
+            <span className="font-mono text-polkadot-cyan/80 text-[10px]">
+              {receipt.beneficiarySS58.slice(0, 8)}...{receipt.beneficiarySS58.slice(-6)}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between items-center">
           <span className="text-white/30">Transaction</span>
           <a
@@ -65,7 +67,7 @@ export function BridgeReceiptCard({ receipt }: Props) {
 
       <p className="mt-3 text-center text-[10px] text-white/20">
         Funds arrive on {receipt.destinationChain} after XCM processing (~1-2 blocks).
-        Check balance on Polkadot.js Apps → {receipt.beneficiarySS58.slice(0, 12)}...
+        {receipt.beneficiarySS58 && ` Check balance on Polkadot.js Apps → ${receipt.beneficiarySS58.slice(0, 12)}...`}
       </p>
     </div>
   );
