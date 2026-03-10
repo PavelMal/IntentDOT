@@ -55,6 +55,17 @@
 - [x] No sensitive data in localStorage
 - [x] All external links open in new tab with rel="noopener" — `SwapReceipt.tsx`
 
+## XCM Cross-Chain Bridge
+
+- [x] EE-padding verified: H160 → AccountId32 appends 12 bytes of `0xEE` (pallet_revive convention) — `xcm-encoder.ts` evmToAccountId32
+- [x] Minimum bridge amount enforced: existential deposit (1 PAS) + fee buffer (0.2 PAS) = 1.2 PAS minimum — `xcm-encoder.ts` minimumBridgeAmount
+- [x] Address validation: rejects non-40-hex-char addresses — `xcm-encoder.ts` evmToAccountId32 throws on invalid H160
+- [x] Fee buffer included: local PayFees (10% capped at 2 PAS) + remote BuyExecution (0.2 PAS) — prevents stuck funds
+- [x] XCM V5 encoding via `@polkadot/api` SCALE types — no manual byte construction
+- [x] WS endpoints use `wss://` (encrypted) — no plaintext connections
+- [ ] Rate limiting on bridge intents — not yet implemented (acceptable for testnet)
+- [ ] Bridge amount upper limit — no cap currently (testnet acceptable, production needs limits)
+
 ## Dependencies
 
 - [x] package-lock.json committed (pinned versions)

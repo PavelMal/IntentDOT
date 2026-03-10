@@ -20,6 +20,7 @@ IntentDOT lets you execute DeFi operations on Polkadot by simply typing what you
 - **On-Chain Whitelist** — Only verified tokens can be swapped/transferred (security layer)
 - **Quote Expiry Timer** — 30s countdown on previews, auto-refresh with live pool data
 - **One-Click Execution** — Preview exact amounts + risk, confirm, done
+- **XCM Cross-Chain Bridge** — "Bridge 20 PAS to relay chain" — teleport native PAS via XCM precompile
 - **Polkadot Hub Native** — Solidity + Rust contracts on Polkadot Hub EVM & PolkaVM
 
 ## Architecture
@@ -77,7 +78,7 @@ forge build
 
 # Run tests
 forge test -vvv             # 37 contract tests
-cd ../frontend && npm test  # 128 frontend + E2E tests
+cd ../frontend && npm test  # 141 frontend + E2E tests
 
 # Start dev server
 cd frontend && npm run dev
@@ -189,8 +190,8 @@ Each pool (e.g. DOT/USDT, DOT/USDC) has its own price history stored in contract
 | v2 | **EIP-7702 Smooth Mode** | Zero-popup trading — sign once, trade forever. Waiting for Polkadot Hub support |
 | v2 | **NFT Trading** | Buy/sell NFTs with natural language intents |
 | v2 | **People Chain Identity** | "Send 10 USDC to Alice" — resolve name via Polkadot People Chain |
+| v2 | **XCM Cross-Chain Assets** | Bridge any pallet_assets token between parachains via XCM intents |
 | v3 | **AI Trading Strategies** | DCA, stop-loss, scheduled execution |
-| v3 | **XCM Cross-Chain** | Cross-parachain intent routing |
 | v3 | **DEX Aggregation** | Route swaps through best available pool |
 
 ## Hackathon
@@ -200,8 +201,8 @@ Built for **Polkadot Solidity Hackathon 2026** (EVM Smart Contracts + PVM Smart 
 ## Tests
 
 - **Contracts:** 37 Foundry tests — swap (9), whitelist (5), transfer (4), factory (7), risk engine (11), events
-- **Frontend:** 128 Jest tests — intent validation (38), risk scoring (22), preview builder (25), risk display (28), integration (12), E2E testnet (21)
-- **Total:** 165 tests (37 contract + 128 frontend/E2E)
+- **Frontend:** 150 Jest tests — intent validation (47), risk scoring (22), preview builder (25), risk display (28), XCM encoder (13), integration (12), E2E testnet (21)
+- **Total:** 187 tests (37 contract + 150 frontend/E2E)
 - Run: `cd contracts && forge test -vvv` / `cd frontend && npm test`
 
 ## License

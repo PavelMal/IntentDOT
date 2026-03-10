@@ -255,83 +255,110 @@ tasks:
 
   - id: T030
     subject: "Research XCM precompile: SCALE encoding, message format, testnet verification"
-    status: pending
+    status: completed
     priority: P0
     estimate_hours: 3
-    owner: unassigned
+    owner: claude
     blocked_by: []
     tags: [research, xcm, pvm-track]
-    notes: "Read docs, build valid XCM message, test weighMessage on testnet via cast. Determine destination chains available on Paseo testnet."
+    notes: |
+      Done. Key findings:
+      - XCM precompile at 0xA0000: execute(), send(), weighMessage() — all work from EVM
+      - Must use AccountId32 (H160 + 12 bytes 0xEE), NOT AccountKey20 — LocationToAccountId doesn't support AccountKey20
+      - Must use PayFees (V5), not BuyExecution — required by barrier AllowTopLevelPaidExecutionFrom
+      - Asset reference: parents:1, interior:Here for native PAS on Hub (relay chain token)
+      - SCALE encoding via @polkadot/api connected to wss://sys.ibp.network/asset-hub-paseo
+      - Local self-transfer: verified (status:1, -1 PAS fees)
+      - Cross-chain teleport Hub→Relay: verified (17.99 PAS received on Paseo relay)
+      - No Solidity contract needed — call precompile directly from frontend via viem
+      - Existential deposit on Paseo relay: 1 PAS — must send enough to cover ED + fees
+      - DryRunApi available for pre-flight checks
 
   - id: T031
-    subject: "Write XCMBridge.sol — Solidity wrapper over XCM precompile (0xA0000)"
-    status: pending
+    subject: "Build XCM message encoder (lib/xcm-encoder.ts)"
+    status: completed
     priority: P0
-    estimate_hours: 5
-    owner: unassigned
+    estimate_hours: 4
+    owner: claude
     blocked_by: [T030]
-    tags: [smart-contract, xcm, pvm-track]
-    notes: "Contract that encodes XCM messages and calls precompile. Functions: bridgeAsset(destParaId, beneficiary, token, amount). SCALE encoding for WithdrawAsset + BuyExecution + DepositAsset."
+    tags: [frontend, xcm, pvm-track]
+    notes: |
+      Done. xcm-encoder.ts: encodeTeleport(), encodeLocalTransfer(), evmToAccountId32(),
+      minimumBridgeAmount(), getAssetHubApi() (cached singleton). XCM_PRECOMPILE address + ABI.
+      CHAIN_CONFIGS with relay chain (ED: 1 PAS, fee buffer: 0.2 PAS).
+      SCALE encoding via @polkadot/api, VersionedXcm V5 output.
 
   - id: T032
-    subject: "Write Foundry tests for XCMBridge"
-    status: pending
+    subject: "Write Jest tests for XCM encoder"
+    status: completed
     priority: P0
-    estimate_hours: 3
-    owner: unassigned
+    estimate_hours: 2
+    owner: claude
     blocked_by: [T031]
     tags: [testing, xcm, pvm-track]
-    notes: "Test message encoding, parameter validation, revert cases. May need fork-test against testnet for precompile calls."
+    notes: "Done. 13 tests: evmToAccountId32 (6), minimumBridgeAmount (2), constants (3), module exports (2). All 141 tests pass."
 
   - id: T033
-    subject: "Deploy XCMBridge to Polkadot Hub TestNet"
-    status: pending
-    priority: P0
-    estimate_hours: 2
-    owner: unassigned
-    blocked_by: [T032]
-    tags: [deploy, xcm, pvm-track]
-    notes: "Deploy, verify on Blockscout, test bridgeAsset with real XCM call."
-
-  - id: T034
     subject: "Add 'bridge' intent type to AI parser + validator"
-    status: pending
+    status: completed
     priority: P0
     estimate_hours: 3
-    owner: unassigned
+    owner: claude
     blocked_by: [T031]
     tags: [ai, frontend, xcm, pvm-track]
-    notes: "New action: bridge. Fields: token, amount, destination_chain, recipient. Update parse-intent API, intent-validator.ts, types.ts."
+    notes: |
+      New action: bridge. Fields: token, amount, destination_chain (relay/parachain).
+      Update types.ts, intent-validator.ts, parse-intent API route.
+      Supported intents: "Bridge 10 PAS to relay chain", "Teleport 5 PAS to Paseo".
+      Done: types.ts (IntentAction + destination_chain + BridgePreview/BridgeReceipt + MessageRole), intent-validator.ts (validateBridge: destination, amount, min 1.2 PAS), route.ts (SYSTEM_PROMPT + bridge JSON format), 9 new tests (47 total intent-validator). 150 tests pass, lint clean.
+
+  - id: T034
+    subject: "Build BridgePreview + BridgeReceipt components"
+    status: in_progress
+    priority: P1
+    estimate_hours: 3
+    owner: claude
+    blocked_by: [T033]
+    tags: [frontend, xcm, pvm-track]
+    notes: |
+      BridgePreview: destination chain, amount, estimated fees (~2 PAS), ED warning if applicable.
+      BridgeReceipt: tx hash, explorer link, destination chain, amount sent.
+      Style consistent with existing TransactionPreviewCard and SwapReceiptCard.
 
   - id: T035
-    subject: "Build BridgePreview + BridgeReceipt components"
-    status: pending
+    subject: "Build useBridgeExecution hook + integrate in Chat"
+    status: in_progress
     priority: P1
-    estimate_hours: 3
-    owner: unassigned
-    blocked_by: [T034]
+    estimate_hours: 4
+    owner: claude
+    blocked_by: [T031, T034]
     tags: [frontend, xcm, pvm-track]
-    notes: "Preview: show destination chain, amount, estimated fees. Receipt: tx hash, explorer link, XCM status."
+    notes: |
+      Hook: encode XCM → weighMessage → execute via precompile 0xA0000.
+      Call precompile directly from viem walletClient (no Solidity wrapper needed).
+      IXcm ABI: execute(bytes,(uint64,uint64)), weighMessage(bytes)(uint64,uint64).
+      Wire into Chat.tsx: handleBridgeIntent + handleBridgeConfirm.
+      Status flow: encoding → weighing → executing → confirming.
 
   - id: T036
-    subject: "Build useBridgeExecution hook + integrate in Chat"
-    status: pending
-    priority: P1
-    estimate_hours: 3
-    owner: unassigned
-    blocked_by: [T033, T035]
-    tags: [frontend, xcm, pvm-track]
-    notes: "Hook: approve → bridge call → receipt. Wire into Chat.tsx handleBridgeIntent + handleBridgeConfirm."
-
-  - id: T037
-    subject: "Write Jest tests for bridge intent parsing + preview"
+    subject: "Write Jest tests for bridge intent + preview + integration"
     status: pending
     priority: P1
     estimate_hours: 2
     owner: unassigned
-    blocked_by: [T034, T035]
+    blocked_by: [T033, T034]
     tags: [testing, xcm, pvm-track]
-    notes: "Validator tests for bridge intent, preview builder tests."
+    notes: "Validator tests for bridge intent, preview builder tests, Chat integration tests."
+
+  - id: T037
+    subject: "Update docs for XCM bridge feature"
+    status: completed
+    priority: P1
+    estimate_hours: 1
+    owner: claude
+    blocked_by: [T035]
+    tags: [docs, xcm, pvm-track]
+    notes: "Updated all 6 docs: README (test counts 128→141/165→178, XCM bridge feature), ARCHITECTURE (bridge intent type, XCM Bridge component), SCOPE (XCM moved from out-of-scope), SECURITY (XCM section), TESTPLAN (xcm-encoder 13 tests), RUNBOOK (XCM WS dependency)."
 
   # --- Phase 2: Rust Risk Engine ---
 
@@ -423,9 +450,9 @@ tasks:
     priority: P0
     estimate_hours: 3
     owner: unassigned
-    blocked_by: [T036, T045]
+    blocked_by: [T035, T045]
     tags: [submission, pvm-track]
-    notes: "Demo: swap with GREEN risk → success. Large swap → RED → Rust blocks on-chain. Bridge DOT to parachain → XCM success."
+    notes: "Demo: swap with GREEN risk → success. Large swap → RED → Rust blocks on-chain. Bridge PAS to relay chain → XCM teleport success."
 
   - id: T052
     subject: "Submit to DoraHacks PVM track"
@@ -433,9 +460,9 @@ tasks:
     priority: P0
     estimate_hours: 1
     owner: unassigned
-    blocked_by: [T050, T051]
+    blocked_by: [T037, T051]
     tags: [submission, pvm-track]
-    notes: "Separate submission for PVM Smart Contracts track. Link same repo, highlight PVM features."
+    notes: "Separate submission for PVM Smart Contracts track. Link same repo, highlight PVM + XCM features."
 
   # --- Deferred (not for hackathon) ---
 

@@ -55,7 +55,7 @@ npm run dev
 cd contracts
 forge test -vvv
 
-# Frontend tests (128 tests: intent-validator, risk-guardian, preview-builder, risk-display, integration-flow)
+# Frontend tests (150 tests: intent-validator, risk-guardian, preview-builder, risk-display, xcm-encoder, integration-flow)
 cd frontend
 npm test
 
@@ -169,6 +169,15 @@ forge script script/SeedPools.s.sol \
 **Symptom:** `EIP-1559 not activated` or transaction type error
 **Cause:** Polkadot Hub TestNet does not support EIP-1559 (type 2) transactions
 **Fix:** Add `--legacy` flag to all forge script commands
+
+### XCM Bridge Dependencies
+
+The XCM bridge feature (`src/lib/xcm-encoder.ts`) requires `@polkadot/api` for SCALE encoding of XCM messages. It connects to Asset Hub Paseo via WebSocket:
+
+- Primary: `wss://sys.ibp.network/asset-hub-paseo`
+- Fallback: `wss://pas-rpc.stakeworld.io/assethub`, `wss://rpc.ibp.network/paseo`
+
+The connection is used only for type encoding (no extrinsics submitted from the backend). The actual XCM execution happens via the XCM Precompile at `0x00000000000000000000000000000000000a0000` on Polkadot Hub, called through wagmi/viem from the frontend.
 
 ## Monitoring
 

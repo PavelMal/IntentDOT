@@ -123,21 +123,22 @@ Testing the full IntentDOT pipeline: natural language input → AI parsing → r
 | 10 | `test_swap_without_risk_engine_works()` | No engine → swap works normally | PASS |
 | 11 | `test_transfer_ignores_risk_engine()` | Transfers skip risk check | PASS |
 
-## Frontend Unit Tests (Jest) — 128/128 pass
+## Frontend Unit Tests (Jest) — 150/150 pass
 
 | File | Tests | Description |
 |------|-------|-------------|
-| `src/__tests__/intent-validator.test.ts` | 38 | validateUserMessage (8) + validateParsedIntent swap (13) + transfer (6) + create_token (11) |
+| `src/__tests__/intent-validator.test.ts` | 47 | validateUserMessage (8) + validateParsedIntent swap (13) + transfer (6) + create_token (11) + bridge (9) |
 | `src/__tests__/risk-guardian.test.ts` | 22 | getAmountOut (4) + calculatePriceImpact (4) + assessRisk (10) + formatTokenAmount (4) |
 | `src/__tests__/preview-builder.test.ts` | 25 | getPoolReserves (4) + buildPreview (14) + buildTransferPreview (4) + buildTokenCreatePreview (3) |
 | `src/__tests__/risk-display.test.ts` | 28 | getRiskLabel (6) + getRiskColors (4) + formatBps (6) + parseRiskCheckedEvent (8) + display integration (4) |
+| `src/__tests__/xcm-encoder.test.ts` | 13 | evmToAccountId32 (6) + minimumBridgeAmount (2) + XCM constants (3) + module exports (2) |
 | `src/__tests__/integration-flow.test.ts` | 12 | Full flow (6) + on-chain pool override (3) + minAmountOut (1) + receipt (1) + ABI flow (1) |
 | `src/__tests__/e2e-testnet.test.ts` | 21 | Intent validation (6) + preview/risk (5) + on-chain reads (4) + swaps (3) + edge cases (3) |
 
 ## Quality Checklist
 
 - [x] All Foundry tests pass (`forge test`) — 37/37
-- [x] All Jest tests pass (`npm test`) — 128/128
+- [x] All Jest tests pass (`npm test`) — 150/150
 - [x] ESLint clean (`npx next lint`)
 - [x] Next.js build clean (`next build`)
 - [x] Risk Guardian: GREEN on normal swap, YELLOW on moderate, RED on high-slippage

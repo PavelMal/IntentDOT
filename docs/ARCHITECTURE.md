@@ -37,6 +37,7 @@
 - **swap** → IntentExecutor → RiskEngine (PVM) → MockDEX (Uniswap V2 AMM)
 - **transfer** → IntentExecutor → ERC20 transferFrom (direct)
 - **create_token** → TokenFactory → deploy new ERC20 + mint + auto-whitelist
+- **bridge** → XCM Precompile (0x…0a0000) → teleport PAS to relay chain via XCM V5
 
 ## Components
 
@@ -104,6 +105,15 @@
 - **Tech:** Solidity 0.8.19, Foundry
 - **Functions:** createToken(name, symbol, initialSupply), getTokensByCreator
 - **Events:** TokenCreated(creator, tokenAddress, name, symbol, initialSupply)
+
+### XCM Bridge (Cross-Chain)
+- **Responsibility:** Encode and execute XCM teleport messages to move PAS between Hub and relay chain
+- **Tech:** `@polkadot/api` for SCALE encoding, XCM Precompile at `0x00000000000000000000000000000000000a0000`
+- **Files:** `src/lib/xcm-encoder.ts`
+- **Functions:** `encodeTeleport(amountPAS, beneficiary, dest)` → SCALE-encoded XcmVersionedXcm V5, `encodeLocalTransfer(amountPAS, beneficiary)`, `evmToAccountId32(address)` (H160 → EE-padded AccountId32), `minimumBridgeAmount(dest)`, `getAssetHubApi()` (cached WS connection)
+- **XCM Pattern:** WithdrawAsset(PAS) → PayFees → InitiateTeleport(dest, BuyExecution + DepositAsset(AccountId32))
+- **Precompile ABI:** `execute(bytes message, (uint64 refTime, uint64 proofSize) weight)`, `weighMessage(bytes message)`, `send(bytes dest, bytes message)`
+- **Address Mapping:** EVM H160 addresses are converted to AccountId32 by appending 12 bytes of `0xEE` (pallet_revive convention)
 
 ## Data Flow
 
