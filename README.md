@@ -20,7 +20,7 @@ IntentDOT lets you execute DeFi operations on Polkadot by simply typing what you
 - **On-Chain Whitelist** — Only verified tokens can be swapped/transferred (security layer)
 - **Quote Expiry Timer** — 30s countdown on previews, auto-refresh with live pool data
 - **One-Click Execution** — Preview exact amounts + risk, confirm, done
-- **XCM Cross-Chain Bridge** — "Bridge 20 PAS to relay chain" — teleport native PAS via XCM precompile
+- **XCM Cross-Chain Bridge** — "Bridge 20 PAS to relay chain" — teleport native PAS to Paseo Relay Chain via XCM precompile (Hub → Relay)
 - **Polkadot Hub Native** — Solidity + Rust contracts on Polkadot Hub EVM & PolkaVM
 
 ## Architecture
@@ -190,7 +190,8 @@ Each pool (e.g. DOT/USDT, DOT/USDC) has its own price history stored in contract
 | v2 | **EIP-7702 Smooth Mode** | Zero-popup trading — sign once, trade forever. Waiting for Polkadot Hub support |
 | v2 | **NFT Trading** | Buy/sell NFTs with natural language intents |
 | v2 | **People Chain Identity** | "Send 10 USDC to Alice" — resolve name via Polkadot People Chain |
-| v2 | **XCM Cross-Chain Assets** | Bridge any pallet_assets token between parachains via XCM intents |
+| v2 | **XCM Multi-Chain Bridging** | Expand bridge to parachains (Moonbeam, Astar, etc.) via ReserveAssetTransfer — currently Hub → Relay only |
+| v2 | **XCM Cross-Chain Assets** | Bridge pallet_assets tokens (not just PAS) between chains via XCM intents |
 | v3 | **AI Trading Strategies** | DCA, stop-loss, scheduled execution |
 | v3 | **DEX Aggregation** | Route swaps through best available pool |
 

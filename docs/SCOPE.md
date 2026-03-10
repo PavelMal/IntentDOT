@@ -27,7 +27,7 @@ DeFi на Polkadot требует навигации между множеств
 11. [x] Send tokens to address (transfer intent) — T022
 12. [x] Create token via ERC20 factory — T024
 13. [x] Quote expiry timer (30s countdown) — T021
-14. [x] XCM cross-chain bridge: teleport PAS to relay chain via XCM precompile — T031, T032
+14. [x] XCM cross-chain bridge: teleport PAS from Hub to Paseo Relay Chain via XCM precompile — T031, T032 (relay only, PAS only)
 
 ## Out of Scope (Roadmap / Nice-to-Have)
 
@@ -44,7 +44,8 @@ DeFi на Polkadot требует навигации между множеств
 
 ### Other Future Work
 
-- **XCM multi-asset bridging** — bridge ERC20/pallet_assets tokens cross-chain (currently PAS only)
+- **XCM multi-chain bridging** — expand bridge destinations to parachains (Moonbeam, Astar, etc.) via ReserveAssetTransfer (currently Hub → Relay only)
+- **XCM multi-asset bridging** — bridge pallet_assets tokens cross-chain (currently PAS only, ERC20 tokens are EVM-only)
 - **Multi-action intents** — "Swap DOT to USDT then send to 0x..." in one intent
 - **Mobile responsive** — desktop only for now
 - **Mainnet deploy** — testnet only for now
