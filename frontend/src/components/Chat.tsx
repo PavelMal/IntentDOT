@@ -26,7 +26,7 @@ const STORAGE_KEY = "intentdot-chat-history";
 const WELCOME_MESSAGE: ChatMessage = {
   role: "assistant",
   content:
-    'What would you like to do?\n• Swap 10 DOT to USDT\n• Send 50 USDT to 0x...\n• Create token PEPE 1M supply\n• Bridge 20 PAS to relay chain',
+    'What would you like to do?\n\n• Swap tokens — "Swap 10 DOT to USDT"\n• Send tokens — "Send 50 USDT to 0x..."\n• Create token — "Create token PEPE with 1M supply"\n• Bridge PAS cross-chain — "Bridge 20 PAS to relay chain"\n• Check balance — "What\'s my balance?"',
 };
 
 function loadMessages(): ChatMessage[] {
