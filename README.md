@@ -170,7 +170,7 @@ Each pool (e.g. DOT/USDT, DOT/USDC) has its own price history stored in contract
 | MockDEX | `0x5b2810428f3DA3400f111f516560EE63d44c336A` |
 | IntentExecutor V3 | `0xdD44bd254dD0bBB6Bfe7C7C062aDA4150e1546d7` |
 | TokenFactory | `0x1Ba4FDBab1C786Bd0aE8c4105711b90dDf87FCDD` |
-| RiskEngine (PVM Rust) | `0xEE6deEd91F29143521a4443553479A5fB97BdfA7` |
+| RiskEngine (PVM Rust) | `0x20c0dF8e93A0c400b7b36f699101972712ad7f9F` |
 
 **Network:** Polkadot Hub TestNet (Paseo)
 - Chain ID: `420420417`

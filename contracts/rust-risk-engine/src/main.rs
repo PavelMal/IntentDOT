@@ -222,12 +222,14 @@ fn calc_volatility(pid: &[u8; 20]) -> u64 {
     isqrt(variance.saturating_mul(BPS))
 }
 
-/// Store current spot price in ring buffer for a specific pool
-fn record_price(pid: &[u8; 20], reserve_in: u128, reserve_out: u128) {
-    if reserve_in == 0 {
+/// Store current spot price in ring buffer for a specific pool.
+/// Price is always recorded as reserve_hi / reserve_lo (canonical direction)
+/// to ensure consistent pricing regardless of swap direction.
+fn record_price(pid: &[u8; 20], reserve_lo: u128, reserve_hi: u128) {
+    if reserve_lo == 0 {
         return;
     }
-    let price_bps = ((reserve_out * BPS as u128) / reserve_in) as u64;
+    let price_bps = ((reserve_hi * BPS as u128) / reserve_lo) as u64;
 
     let idx_key = pool_index_key(pid);
     let index = read_u64(&idx_key) as usize % WINDOW_SIZE;
@@ -243,14 +245,23 @@ fn record_price(pid: &[u8; 20], reserve_in: u128, reserve_out: u128) {
     }
 }
 
-/// Evaluate swap risk for a specific pool
-fn evaluate(amount_in: u128, reserve_in: u128, reserve_out: u128, pid: &[u8; 20]) -> (u8, u64, u64, u64) {
+/// Evaluate swap risk for a specific pool.
+/// token_in and token_out are used to normalize price direction:
+/// price is always recorded as reserve(higher_addr) / reserve(lower_addr).
+fn evaluate(amount_in: u128, reserve_in: u128, reserve_out: u128, token_in: &[u8; 20], token_out: &[u8; 20], pid: &[u8; 20]) -> (u8, u64, u64, u64) {
     let price_impact = calc_price_impact(amount_in, reserve_in);
     let ma = calc_ma20(pid);
     let volatility = calc_volatility(pid);
 
-    let current_price_bps = if reserve_in > 0 {
-        ((reserve_out * BPS as u128) / reserve_in) as u64
+    // Normalize: always compute price as reserve(hi_addr) / reserve(lo_addr)
+    let (reserve_lo, reserve_hi) = if token_in < token_out {
+        (reserve_in, reserve_out)
+    } else {
+        (reserve_out, reserve_in)
+    };
+
+    let current_price_bps = if reserve_lo > 0 {
+        ((reserve_hi * BPS as u128) / reserve_lo) as u64
     } else {
         0
     };
@@ -266,7 +277,7 @@ fn evaluate(amount_in: u128, reserve_in: u128, reserve_out: u128, pid: &[u8; 20]
 
     let composite = (impact_score * WEIGHT_IMPACT + dev_score * WEIGHT_DEVIATION + vol_score * WEIGHT_VOLATILITY) / 100;
 
-    record_price(pid, reserve_in, reserve_out);
+    record_price(pid, reserve_lo, reserve_hi);
 
     let risk_level = if composite <= GREEN_MAX {
         0
@@ -314,7 +325,7 @@ pub extern "C" fn call() {
         let token_out = decode_address(&calldata, 132);
 
         let pid = pool_id(&token_in, &token_out);
-        let (risk_level, score, price_impact, volatility) = evaluate(amount_in, reserve_in, reserve_out, &pid);
+        let (risk_level, score, price_impact, volatility) = evaluate(amount_in, reserve_in, reserve_out, &token_in, &token_out, &pid);
 
         let mut output = [0u8; 128];
         output[31] = risk_level;
