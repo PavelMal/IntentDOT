@@ -202,8 +202,8 @@ Built for **Polkadot Solidity Hackathon 2026** (EVM Smart Contracts + PVM Smart 
 ## Tests
 
 - **Contracts:** 37 Foundry tests — swap (9), whitelist (5), transfer (4), factory (7), risk engine (11), events
-- **Frontend:** 150 Jest tests — intent validation (47), risk scoring (22), preview builder (25), risk display (28), XCM encoder (13), integration (12), E2E testnet (21)
-- **Total:** 187 tests (37 contract + 150 frontend/E2E)
+- **Frontend:** 164 Jest tests — intent validation (47), risk scoring (22), preview builder (25), risk display (28), XCM encoder (15), bridge flow (12), integration (12), E2E testnet (21)
+- **Total:** 201 tests (37 contract + 164 frontend/E2E)
 - Run: `cd contracts && forge test -vvv` / `cd frontend && npm test`
 
 ## License

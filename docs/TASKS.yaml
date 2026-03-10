@@ -314,7 +314,7 @@ tasks:
 
   - id: T034
     subject: "Build BridgePreview + BridgeReceipt components"
-    status: in_progress
+    status: completed
     priority: P1
     estimate_hours: 3
     owner: claude
@@ -327,7 +327,7 @@ tasks:
 
   - id: T035
     subject: "Build useBridgeExecution hook + integrate in Chat"
-    status: in_progress
+    status: completed
     priority: P1
     estimate_hours: 4
     owner: claude
@@ -342,7 +342,7 @@ tasks:
 
   - id: T036
     subject: "Write Jest tests for bridge intent + preview + integration"
-    status: pending
+    status: completed
     priority: P1
     estimate_hours: 2
     owner: unassigned
