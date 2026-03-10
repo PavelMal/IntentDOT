@@ -1,6 +1,7 @@
 import type { IntentParseResult } from "./types";
 
 const VALID_TOKENS = ["DOT", "USDT", "USDC"];
+const VALID_BRIDGE_DESTINATIONS = ["relay"];
 const ETH_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
 
 /**
@@ -25,13 +26,17 @@ export function validateParsedIntent(raw: IntentParseResult): IntentParseResult 
     return validateCreateToken(raw);
   }
 
+  if (action === "bridge") {
+    return validateBridge(raw);
+  }
+
   if (action === "check_balance") {
     return raw; // No validation needed — token_from can be empty (all tokens) or a specific token
   }
 
   return {
     success: false,
-    clarification: "Supported actions: swap, transfer, create token, check balance. Try: 'Swap 10 DOT to USDT' or 'Send 50 USDT to 0x...' or 'What's my balance?'",
+    clarification: "Supported actions: swap, transfer, bridge, create token, check balance. Try: 'Swap 10 DOT to USDT' or 'Bridge 20 PAS to relay chain'",
   };
 }
 
@@ -141,6 +146,42 @@ function validateCreateToken(raw: IntentParseResult): IntentParseResult {
     return {
       success: false,
       clarification: "Initial supply is too large (max 1,000,000,000,000,000). Try a smaller number.",
+    };
+  }
+
+  return raw;
+}
+
+function validateBridge(raw: IntentParseResult): IntentParseResult {
+  if (!raw.success) return raw;
+  const { amount, destination_chain } = raw.intent;
+
+  if (!destination_chain || !VALID_BRIDGE_DESTINATIONS.includes(destination_chain)) {
+    return {
+      success: false,
+      clarification: `Supported bridge destinations: ${VALID_BRIDGE_DESTINATIONS.join(", ")}. Try: 'Bridge 20 PAS to relay chain'`,
+    };
+  }
+
+  if (amount !== null && (typeof amount !== "number" || amount <= 0)) {
+    return {
+      success: false,
+      clarification: "Amount must be a positive number. Try: 'Bridge 20 PAS to relay chain'",
+    };
+  }
+
+  if (amount === null) {
+    return {
+      success: false,
+      clarification: "How much PAS do you want to bridge? Example: 'Bridge 20 PAS to relay chain'",
+    };
+  }
+
+  // Minimum: 1.2 PAS (ED 1 PAS + 0.2 fee buffer)
+  if (amount < 1.2) {
+    return {
+      success: false,
+      clarification: "Minimum bridge amount is 1.2 PAS (1 PAS existential deposit + 0.2 PAS fees). Try a larger amount.",
     };
   }
 

@@ -1,4 +1,4 @@
-export type IntentAction = "swap" | "transfer" | "create_token" | "check_balance";
+export type IntentAction = "swap" | "transfer" | "create_token" | "check_balance" | "bridge";
 
 export interface ParsedIntent {
   action: IntentAction;
@@ -6,6 +6,7 @@ export interface ParsedIntent {
   token_to: string;
   amount: number | null;
   recipient?: string;
+  destination_chain?: string;
   tokenName?: string;
   tokenSymbol?: string;
   initialSupply?: number;
@@ -51,6 +52,22 @@ export interface TokenCreatePreview {
   intent: ParsedIntent;
 }
 
+export interface BridgePreview {
+  intent: ParsedIntent;
+  destinationChain: string;
+  estimatedFees: string;
+  minimumAmount: number;
+  insufficientBalance?: { have: string; need: number };
+}
+
+export interface BridgeReceipt {
+  txHash: string;
+  amountPAS: number;
+  destinationChain: string;
+  beneficiary: string;
+  explorerUrl: string;
+}
+
 export interface OnChainRisk {
   riskLevel: number; // 0=GREEN, 1=YELLOW, 2=RED
   score: number;
@@ -85,7 +102,7 @@ export interface TokenCreateReceipt {
   explorerUrl: string;
 }
 
-export type MessageRole = "user" | "assistant" | "preview" | "receipt" | "transfer-preview" | "transfer-receipt" | "create-preview" | "create-receipt";
+export type MessageRole = "user" | "assistant" | "preview" | "receipt" | "transfer-preview" | "transfer-receipt" | "create-preview" | "create-receipt" | "bridge-preview" | "bridge-receipt";
 
 export interface ChatMessage {
   role: MessageRole;
@@ -96,4 +113,6 @@ export interface ChatMessage {
   transferReceipt?: TransferReceipt;
   createPreview?: TokenCreatePreview;
   createReceipt?: TokenCreateReceipt;
+  bridgePreview?: BridgePreview;
+  bridgeReceipt?: BridgeReceipt;
 }

@@ -112,6 +112,7 @@ describe("validateParsedIntent", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.clarification).toContain("swap");
+      expect(result.clarification).toContain("bridge");
     }
   });
 
@@ -354,6 +355,93 @@ describe("validateParsedIntent — create_token", () => {
     const input: IntentParseResult = {
       success: true,
       intent: { action: "create_token", token_from: "", token_to: "", amount: null, tokenName: "PEPE", tokenSymbol: "PEPE", initialSupply: 1e15 },
+    };
+    expect(validateParsedIntent(input).success).toBe(true);
+  });
+});
+
+describe("validateParsedIntent — bridge", () => {
+  it("passes valid bridge intent", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "bridge", token_from: "PAS", token_to: "", amount: 20, destination_chain: "relay" },
+    };
+    expect(validateParsedIntent(input).success).toBe(true);
+  });
+
+  it("rejects bridge with unsupported destination", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "bridge", token_from: "PAS", token_to: "", amount: 20, destination_chain: "moonbeam" },
+    };
+    const result = validateParsedIntent(input);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.clarification).toContain("relay");
+    }
+  });
+
+  it("rejects bridge with missing destination", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "bridge", token_from: "PAS", token_to: "", amount: 20 },
+    };
+    const result = validateParsedIntent(input);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects bridge with zero amount", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "bridge", token_from: "PAS", token_to: "", amount: 0, destination_chain: "relay" },
+    };
+    expect(validateParsedIntent(input).success).toBe(false);
+  });
+
+  it("rejects bridge with negative amount", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "bridge", token_from: "PAS", token_to: "", amount: -5, destination_chain: "relay" },
+    };
+    expect(validateParsedIntent(input).success).toBe(false);
+  });
+
+  it("asks for amount when null", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "bridge", token_from: "PAS", token_to: "", amount: null, destination_chain: "relay" },
+    };
+    const result = validateParsedIntent(input);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.clarification).toContain("How much");
+    }
+  });
+
+  it("rejects bridge below minimum (1.2 PAS)", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "bridge", token_from: "PAS", token_to: "", amount: 1, destination_chain: "relay" },
+    };
+    const result = validateParsedIntent(input);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.clarification).toContain("1.2 PAS");
+    }
+  });
+
+  it("passes bridge at exactly 1.2 PAS", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "bridge", token_from: "PAS", token_to: "", amount: 1.2, destination_chain: "relay" },
+    };
+    expect(validateParsedIntent(input).success).toBe(true);
+  });
+
+  it("passes bridge with large amount", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "bridge", token_from: "PAS", token_to: "", amount: 1000, destination_chain: "relay" },
     };
     expect(validateParsedIntent(input).success).toBe(true);
   });
