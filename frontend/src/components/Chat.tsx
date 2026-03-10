@@ -189,6 +189,10 @@ export function Chat() {
     if (!text || isLoading) return;
 
     setInput("");
+    // Remove stale previews from previous intents
+    setMessages((prev) => prev.filter((m) =>
+      m.role !== "preview" && m.role !== "transfer-preview" && m.role !== "create-preview"
+    ));
     addMessage({ role: "user", content: text });
     setIsLoading(true);
 
