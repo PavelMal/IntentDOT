@@ -247,6 +247,11 @@ export function TransactionPreviewCard({
             ))}
           </ul>
         )}
+        {risk.level === "RED" && (
+          <p className="mt-2 text-xs font-normal text-white/50 border-t border-white/5 pt-2">
+            Try a smaller amount to reduce price impact, or split into multiple swaps.
+          </p>
+        )}
       </div>
 
       {/* Actions */}
