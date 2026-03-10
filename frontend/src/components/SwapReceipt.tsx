@@ -2,23 +2,17 @@
 
 import { useState } from "react";
 import type { SwapReceipt } from "@/lib/types";
+import { getRiskLabel, getRiskColors, formatBps } from "@/lib/risk-display";
 
 interface Props {
   receipt: SwapReceipt;
 }
 
-const RISK_LABELS = ["GREEN", "YELLOW", "RED"] as const;
-const RISK_COLORS = {
-  GREEN: { bg: "bg-green-500/10", border: "border-green-500/30", text: "text-green-400", dot: "bg-green-400" },
-  YELLOW: { bg: "bg-yellow-500/10", border: "border-yellow-500/30", text: "text-yellow-400", dot: "bg-yellow-400" },
-  RED: { bg: "bg-red-500/10", border: "border-red-500/30", text: "text-red-400", dot: "bg-red-400" },
-} as const;
-
 export function SwapReceiptCard({ receipt }: Props) {
   const [showTooltip, setShowTooltip] = useState(false);
   const risk = receipt.onChainRisk;
-  const riskLabel = risk ? RISK_LABELS[risk.riskLevel] ?? "GREEN" : null;
-  const colors = riskLabel ? RISK_COLORS[riskLabel] : null;
+  const riskLabel = risk ? getRiskLabel(risk.riskLevel) : null;
+  const colors = riskLabel ? getRiskColors(riskLabel) : null;
 
   return (
     <div className="mx-auto max-w-md rounded-2xl border border-polkadot-green/20 bg-polkadot-green/[0.03] backdrop-blur-xl p-5 glow-green">
@@ -135,8 +129,8 @@ export function SwapReceiptCard({ receipt }: Props) {
             </div>
           </div>
           <div className="mt-2 flex gap-4 text-[11px] text-white/40">
-            <span>Impact: {(risk.priceImpact / 100).toFixed(2)}%</span>
-            {risk.volatility > 0 && <span>Vol: {(risk.volatility / 100).toFixed(2)}%</span>}
+            <span>Impact: {formatBps(risk.priceImpact)}%</span>
+            {risk.volatility > 0 && <span>Vol: {formatBps(risk.volatility)}%</span>}
           </div>
         </div>
       )}

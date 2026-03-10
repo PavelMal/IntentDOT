@@ -3,10 +3,11 @@
 import { useCallback, useState } from "react";
 import { useAccount, usePublicClient } from "wagmi";
 import { getWalletClient } from "wagmi/actions";
-import { parseUnits, formatUnits, decodeEventLog, type Hash } from "viem";
+import { parseUnits, formatUnits, type Hash } from "viem";
 import { config, polkadotHubTestnet } from "@/lib/wagmi";
 import { CONTRACTS, TOKEN_MAP } from "@/lib/contracts";
 import { mockERC20Abi, intentExecutorAbi } from "@/lib/abis";
+import { parseRiskCheckedEvent, type RawLog } from "@/lib/risk-display";
 import type { OnChainRisk } from "@/lib/types";
 
 export type SwapStatus =
@@ -145,33 +146,9 @@ export function useSwapExecution() {
         }
 
         // Parse RiskChecked event from receipt logs
-        let onChainRisk: OnChainRisk | undefined;
-        for (const log of receipt.logs) {
-          try {
-            const decoded = decodeEventLog({
-              abi: intentExecutorAbi,
-              data: log.data,
-              topics: log.topics,
-            });
-            if (decoded.eventName === "RiskChecked") {
-              const args = decoded.args as {
-                riskLevel: number;
-                score: bigint;
-                priceImpact: bigint;
-                volatility: bigint;
-              };
-              onChainRisk = {
-                riskLevel: args.riskLevel,
-                score: Number(args.score),
-                priceImpact: Number(args.priceImpact),
-                volatility: Number(args.volatility),
-              };
-              break;
-            }
-          } catch {
-            // Not a RiskChecked event, skip
-          }
-        }
+        const onChainRisk: OnChainRisk | undefined = parseRiskCheckedEvent(
+          receipt.logs as unknown as RawLog[]
+        );
 
         const r: SwapResult = {
           status: "success",
