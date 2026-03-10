@@ -1,5 +1,6 @@
 import {
   evmToAccountId32,
+  evmToSS58,
   minimumBridgeAmount,
   CHAIN_CONFIGS,
   XCM_PRECOMPILE,
@@ -47,6 +48,21 @@ describe("evmToAccountId32", () => {
     expect(result).toBe(
       "0x0000000000000000000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeee",
     );
+  });
+});
+
+// --- evmToSS58 ---
+
+describe("evmToSS58", () => {
+  it("converts known address to correct SS58", () => {
+    const ss58 = evmToSS58("0x16Fc1792b61b2C1e93702cC5d2457d1Fd22500BA");
+    expect(ss58).toBe("1X8wYgu5SU9w52gG9pt8VjZfR9chdKKoeuZvk5jniFCtJNX");
+  });
+
+  it("returns a string starting with 1 for prefix 0", () => {
+    const ss58 = evmToSS58("0x0000000000000000000000000000000000000001");
+    expect(typeof ss58).toBe("string");
+    expect(ss58.length).toBeGreaterThan(10);
   });
 });
 

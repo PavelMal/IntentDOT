@@ -1,4 +1,5 @@
 import { ApiPromise, WsProvider } from "@polkadot/api";
+import { encodeAddress } from "@polkadot/util-crypto";
 import type { Address } from "viem";
 
 // --- Constants ---
@@ -116,6 +117,17 @@ export function evmToAccountId32(address: Address): `0x${string}` {
   const clean = address.toLowerCase().replace("0x", "");
   if (clean.length !== 40) throw new Error(`Invalid H160 address: ${address}`);
   return `0x${clean}${"ee".repeat(12)}` as `0x${string}`;
+}
+
+/**
+ * Convert an EVM address to the SS58 address on the relay chain.
+ * Useful for showing the user where to check their balance after bridging.
+ *
+ * `0x16Fc...00BA` → `1X8wYgu5SU9w52gG9pt8VjZfR9chdKKoeuZvk5jniFCtJNX`
+ */
+export function evmToSS58(address: Address, ss58Prefix = 0): string {
+  const accountId32 = evmToAccountId32(address);
+  return encodeAddress(accountId32, ss58Prefix);
 }
 
 /**

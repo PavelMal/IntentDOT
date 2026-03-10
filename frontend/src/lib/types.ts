@@ -65,6 +65,7 @@ export interface BridgeReceipt {
   amountPAS: number;
   destinationChain: string;
   beneficiary: string;
+  beneficiarySS58: string;
   explorerUrl: string;
 }
 

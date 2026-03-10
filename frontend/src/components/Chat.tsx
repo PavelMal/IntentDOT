@@ -17,7 +17,7 @@ import { useSwapExecution } from "@/hooks/useSwapExecution";
 import { useTransferExecution } from "@/hooks/useTransferExecution";
 import { useTokenCreation } from "@/hooks/useTokenCreation";
 import { useBridgeExecution } from "@/hooks/useBridgeExecution";
-import { minimumBridgeAmount, CHAIN_CONFIGS, type DestinationChain } from "@/lib/xcm-encoder";
+import { minimumBridgeAmount, CHAIN_CONFIGS, evmToSS58, type DestinationChain } from "@/lib/xcm-encoder";
 import { polkadotHubTestnet } from "@/lib/wagmi";
 import { TOKEN_MAP, CONTRACTS } from "@/lib/contracts";
 import { mockERC20Abi, tokenFactoryAbi } from "@/lib/abis";
@@ -204,6 +204,7 @@ export function Chat() {
         amountPAS: intent.amount,
         destinationChain: CHAIN_CONFIGS[dest].label,
         beneficiary: address || "",
+        beneficiarySS58: address ? evmToSS58(address) : "",
         explorerUrl: getExplorerUrl(result.executeTxHash),
       };
       setMessages((prev) => prev.filter((m) => m.bridgePreview !== preview));
