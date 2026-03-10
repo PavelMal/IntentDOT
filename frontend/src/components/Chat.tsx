@@ -650,7 +650,7 @@ export function Chat() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder='Try: "Swap 10 DOT to USDT" or "Send 50 USDT to 0x..."'
+            placeholder='Try: "Swap 10 DOT to USDT" or "Bridge 20 PAS to relay chain"'
             className="flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder-white/25 outline-none focus:border-polkadot-pink/30 focus:bg-white/[0.05] transition-all"
             maxLength={500}
             disabled={isLoading || isExecuting}
