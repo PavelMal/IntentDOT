@@ -225,7 +225,7 @@ export function TransactionPreviewCard({
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
-                      <span className="text-white/40">YELLOW — Elevated risk, proceed with caution</span>
+                      <span className="text-white/40">YELLOW — Elevated risk, swap allowed</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 w-1.5 rounded-full bg-red-400" />

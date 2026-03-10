@@ -109,11 +109,11 @@ export function SwapReceiptCard({ receipt }: Props) {
                     <div className="mt-3 pt-3 border-t border-white/5 space-y-1.5 text-[10px]">
                       <div className="flex items-center gap-2">
                         <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
-                        <span className="text-white/40">GREEN (0-39) — Safe to swap</span>
+                        <span className="text-white/40">GREEN (0-39) — Low risk</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
-                        <span className="text-white/40">YELLOW (40-69) — Elevated risk, proceed with caution</span>
+                        <span className="text-white/40">YELLOW (40-69) — Elevated risk</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="h-1.5 w-1.5 rounded-full bg-red-400" />
