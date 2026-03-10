@@ -3,17 +3,21 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAccount, usePublicClient } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
-import type { ChatMessage, IntentParseResult, TransactionPreview, TransferPreview, TokenCreatePreview, SwapReceipt, TransferReceipt, TokenCreateReceipt, ParsedIntent } from "@/lib/types";
+import type { ChatMessage, IntentParseResult, TransactionPreview, TransferPreview, TokenCreatePreview, BridgePreview, SwapReceipt, TransferReceipt, TokenCreateReceipt, BridgeReceipt, ParsedIntent } from "@/lib/types";
 import { TransactionPreviewCard } from "./TransactionPreview";
 import { SwapReceiptCard } from "./SwapReceipt";
 import { TransferPreviewCard } from "./TransferPreview";
 import { TransferReceiptCard } from "./TransferReceipt";
 import { TokenCreatePreviewCard } from "./TokenCreatePreview";
 import { TokenCreateReceiptCard } from "./TokenCreateReceipt";
+import { BridgePreviewCard } from "./BridgePreview";
+import { BridgeReceiptCard } from "./BridgeReceipt";
 import { buildPreview, buildTransferPreview, buildTokenCreatePreview, fetchPoolReserves } from "@/lib/preview-builder";
 import { useSwapExecution } from "@/hooks/useSwapExecution";
 import { useTransferExecution } from "@/hooks/useTransferExecution";
 import { useTokenCreation } from "@/hooks/useTokenCreation";
+import { useBridgeExecution } from "@/hooks/useBridgeExecution";
+import { minimumBridgeAmount, CHAIN_CONFIGS, type DestinationChain } from "@/lib/xcm-encoder";
 import { polkadotHubTestnet } from "@/lib/wagmi";
 import { TOKEN_MAP, CONTRACTS } from "@/lib/contracts";
 import { mockERC20Abi, tokenFactoryAbi } from "@/lib/abis";
@@ -22,7 +26,7 @@ const STORAGE_KEY = "intentdot-chat-history";
 const WELCOME_MESSAGE: ChatMessage = {
   role: "assistant",
   content:
-    'What would you like to do?\n• Swap 10 DOT to USDT\n• Send 50 USDT to 0x...\n• Create token PEPE 1M supply',
+    'What would you like to do?\n• Swap 10 DOT to USDT\n• Send 50 USDT to 0x...\n• Create token PEPE 1M supply\n• Bridge 20 PAS to relay chain',
 };
 
 function loadMessages(): ChatMessage[] {
@@ -47,12 +51,14 @@ export function Chat() {
   const { result: swapResult, executeSwap, reset: resetSwap } = useSwapExecution();
   const { result: transferResult, executeTransfer, reset: resetTransfer } = useTransferExecution();
   const { result: createResult, createToken, reset: resetCreate } = useTokenCreation();
+  const { result: bridgeResult, executeBridge, reset: resetBridge } = useBridgeExecution();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isSwapExecuting = swapResult.status === "approving" || swapResult.status === "executing" || swapResult.status === "approved";
   const isTransferExecuting = transferResult.status === "approving" || transferResult.status === "executing" || transferResult.status === "approved";
   const isCreateExecuting = createResult.status === "creating";
-  const isExecuting = isSwapExecuting || isTransferExecuting || isCreateExecuting;
+  const isBridgeExecuting = bridgeResult.status === "encoding" || bridgeResult.status === "weighing" || bridgeResult.status === "executing" || bridgeResult.status === "confirming";
+  const isExecuting = isSwapExecuting || isTransferExecuting || isCreateExecuting || isBridgeExecuting;
 
   // Persist messages to localStorage
   useEffect(() => {
@@ -182,6 +188,33 @@ export function Chat() {
     }
   }, [addMessage, createToken, resetCreate, getExplorerUrl]);
 
+  // === BRIDGE CONFIRM ===
+  const handleBridgeConfirm = useCallback(async (preview: BridgePreview) => {
+    const { intent } = preview;
+    if (!intent.amount) return;
+
+    const dest = (intent.destination_chain || "relay") as DestinationChain;
+    addMessage({ role: "assistant", content: "Encoding XCM message and bridging..." });
+
+    const result = await executeBridge(intent.amount, dest);
+
+    if (result.status === "success" && result.executeTxHash) {
+      const receipt: BridgeReceipt = {
+        txHash: result.executeTxHash,
+        amountPAS: intent.amount,
+        destinationChain: CHAIN_CONFIGS[dest].label,
+        beneficiary: address || "",
+        explorerUrl: getExplorerUrl(result.executeTxHash),
+      };
+      setMessages((prev) => prev.filter((m) => m.bridgePreview !== preview));
+      addMessage({ role: "bridge-receipt", content: "", bridgeReceipt: receipt });
+      resetBridge();
+    } else if (result.status === "error") {
+      addMessage({ role: "assistant", content: `Bridge failed: ${result.error}` });
+      resetBridge();
+    }
+  }, [addMessage, executeBridge, resetBridge, getExplorerUrl, address]);
+
   // === SUBMIT ===
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,7 +224,7 @@ export function Chat() {
     setInput("");
     // Remove stale previews from previous intents
     setMessages((prev) => prev.filter((m) =>
-      m.role !== "preview" && m.role !== "transfer-preview" && m.role !== "create-preview"
+      m.role !== "preview" && m.role !== "transfer-preview" && m.role !== "create-preview" && m.role !== "bridge-preview"
     ));
     addMessage({ role: "user", content: text });
     setIsLoading(true);
@@ -216,6 +249,8 @@ export function Chat() {
           await handleTransferIntent(intent);
         } else if (intent.action === "create_token") {
           handleCreateTokenIntent(intent);
+        } else if (intent.action === "bridge") {
+          await handleBridgeIntent(intent);
         } else if (intent.action === "check_balance") {
           await handleCheckBalance(intent);
         }
@@ -299,6 +334,54 @@ export function Chat() {
       content: `Create token "${intent.tokenName}" (${intent.tokenSymbol}) with ${intent.initialSupply?.toLocaleString()} supply`,
     });
     addMessage({ role: "create-preview", content: "", createPreview });
+  };
+
+  const handleBridgeIntent = async (intent: ParsedIntent) => {
+    if (!intent.amount) {
+      addMessage({
+        role: "assistant",
+        content: "How much PAS do you want to bridge? Example: 'Bridge 20 PAS to relay chain'",
+      });
+      return;
+    }
+
+    const dest = (intent.destination_chain || "relay") as DestinationChain;
+    const cfg = CHAIN_CONFIGS[dest];
+    const min = minimumBridgeAmount(dest);
+
+    // Estimate fees: local ~10% capped at 2 PAS + remote 0.2 PAS
+    const localFee = Math.min(intent.amount * 0.1, 2);
+    const remoteFee = Number(cfg.remoteFeeBuffer) / 1e10;
+    const totalFees = (localFee + remoteFee).toFixed(1);
+
+    const bridgePreview: BridgePreview = {
+      intent,
+      destinationChain: cfg.label,
+      estimatedFees: totalFees,
+      minimumAmount: min,
+    };
+
+    // Check native PAS balance
+    if (publicClient && address) {
+      try {
+        const balance = await publicClient.getBalance({ address });
+        const balancePAS = parseFloat(formatUnits(balance, 18));
+        if (balancePAS < intent.amount) {
+          bridgePreview.insufficientBalance = {
+            have: balancePAS.toFixed(2),
+            need: intent.amount,
+          };
+        }
+      } catch {
+        // Let execution handle it
+      }
+    }
+
+    addMessage({
+      role: "assistant",
+      content: `Bridge ${intent.amount} PAS \u2192 ${cfg.label}`,
+    });
+    addMessage({ role: "bridge-preview", content: "", bridgePreview });
   };
 
   const handleCheckBalance = async (intent: ParsedIntent) => {
@@ -407,6 +490,15 @@ export function Chat() {
     if (isCreateExecuting) {
       return "Deploying token contract on-chain...";
     }
+    if (isBridgeExecuting) {
+      return bridgeResult.status === "encoding"
+        ? "Encoding XCM message..."
+        : bridgeResult.status === "weighing"
+          ? "Weighing XCM message..."
+          : bridgeResult.status === "confirming"
+            ? "Waiting for confirmation..."
+            : "Executing XCM bridge on-chain...";
+    }
     return "";
   };
 
@@ -457,12 +549,24 @@ export function Chat() {
                   addMessage({ role: "assistant", content: "Token creation cancelled." });
                 }}
               />
+            ) : msg.bridgePreview ? (
+              <BridgePreviewCard
+                preview={msg.bridgePreview}
+                isExecuting={isExecuting}
+                onConfirm={() => handleBridgeConfirm(msg.bridgePreview!)}
+                onCancel={() => {
+                  setMessages((prev) => prev.filter((m) => m.bridgePreview !== msg.bridgePreview));
+                  addMessage({ role: "assistant", content: "Bridge cancelled." });
+                }}
+              />
             ) : msg.receipt ? (
               <SwapReceiptCard receipt={msg.receipt} />
             ) : msg.transferReceipt ? (
               <TransferReceiptCard receipt={msg.transferReceipt} />
             ) : msg.createReceipt ? (
               <TokenCreateReceiptCard receipt={msg.createReceipt} />
+            ) : msg.bridgeReceipt ? (
+              <BridgeReceiptCard receipt={msg.bridgeReceipt} />
             ) : (
               <div
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
@@ -524,6 +628,7 @@ export function Chat() {
                       resetSwap();
                       resetTransfer();
                       resetCreate();
+                      resetBridge();
                       setShowClearConfirm(false);
                     }}
                     className="rounded-lg bg-red-500/20 border border-red-500/30 px-3 py-1 text-xs font-medium text-red-400 hover:bg-red-500/30 transition-all"
