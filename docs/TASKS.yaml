@@ -523,11 +523,11 @@ tasks:
       Click fills input with the text and auto-submits. Simple UX shortcut.
 
   - id: T064
-    subject: "Mini Price Chart from RiskEngine MA20 data"
-    status: pending
+    subject: "Mini Price Chart from on-chain swap events"
+    status: completed
     priority: P1
     estimate_hours: 3
-    owner: unassigned
+    owner: claude
     blocked_by: [T062]
     tags: [frontend, enhancement]
     notes: |

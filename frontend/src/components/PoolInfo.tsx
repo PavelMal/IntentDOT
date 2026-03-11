@@ -1,15 +1,20 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useReadContracts } from "wagmi";
-import { formatUnits } from "viem";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { usePublicClient, useReadContracts } from "wagmi";
+import { formatUnits, parseAbiItem, type Address } from "viem";
 import { CONTRACTS } from "@/lib/contracts";
 import { mockDexAbi } from "@/lib/abis";
+import { Sparkline } from "./Sparkline";
 
 const POOLS = [
   { name: "DOT / USDT", tokenA: CONTRACTS.dotToken, tokenB: CONTRACTS.usdtToken, quote: "USDT" },
   { name: "DOT / USDC", tokenA: CONTRACTS.dotToken, tokenB: CONTRACTS.usdcToken, quote: "USDC" },
 ] as const;
+
+const SWAPPED_EVENT = parseAbiItem(
+  "event Swapped(address indexed user, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut)"
+);
 
 function fmtReserve(value: bigint | undefined): string {
   if (value === undefined) return "—";
@@ -27,6 +32,8 @@ function poolPrice(reserveA: bigint | undefined, reserveB: bigint | undefined): 
 export function PoolInfo() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const publicClient = usePublicClient();
+  const [priceHistory, setPriceHistory] = useState<Record<string, number[]>>({});
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -45,6 +52,62 @@ export function PoolInfo() {
     })),
     query: { refetchInterval: 12_000 },
   });
+
+  // Fetch swap events for price history when dropdown opens
+  const fetchPriceHistory = useCallback(async () => {
+    if (!publicClient) return;
+    try {
+      const currentBlock = await publicClient.getBlockNumber();
+      const fromBlock = currentBlock > 200_000n ? currentBlock - 200_000n : 0n;
+
+      const logs = await publicClient.getLogs({
+        address: CONTRACTS.mockDex as Address,
+        event: SWAPPED_EVENT,
+        fromBlock,
+        toBlock: "latest",
+      });
+
+      const history: Record<string, number[]> = {};
+
+      for (const log of logs) {
+        const tokenIn = (log.args.tokenIn as string).toLowerCase();
+        const tokenOut = (log.args.tokenOut as string).toLowerCase();
+        const amountIn = log.args.amountIn as bigint;
+        const amountOut = log.args.amountOut as bigint;
+        if (amountIn === 0n) continue;
+
+        // Find which pool this belongs to
+        for (const pool of POOLS) {
+          const a = pool.tokenA.toLowerCase();
+          const b = pool.tokenB.toLowerCase();
+
+          if ((tokenIn === a && tokenOut === b) || (tokenIn === b && tokenOut === a)) {
+            const key = pool.name;
+            if (!history[key]) history[key] = [];
+
+            // Normalize: price = quote / base (e.g. USDT per DOT)
+            let price: number;
+            if (tokenIn === a) {
+              // DOT → USDT: price = amountOut / amountIn
+              price = Number(formatUnits(amountOut, 18)) / Number(formatUnits(amountIn, 18));
+            } else {
+              // USDT → DOT: price = amountIn / amountOut
+              price = Number(formatUnits(amountIn, 18)) / Number(formatUnits(amountOut, 18));
+            }
+            history[key].push(price);
+            break;
+          }
+        }
+      }
+
+      setPriceHistory(history);
+    } catch { /* silently fail */ }
+  }, [publicClient]);
+
+  // Fetch on open
+  useEffect(() => {
+    if (open) fetchPriceHistory();
+  }, [open, fetchPriceHistory]);
 
   return (
     <div ref={ref} className="relative">
@@ -65,14 +128,16 @@ export function PoolInfo() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-white/[0.08] bg-[#1a1425] backdrop-blur-xl shadow-2xl z-50 animate-fade-in-up overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-2xl border border-white/[0.08] bg-[#1a1425] backdrop-blur-xl shadow-2xl z-50 animate-fade-in-up overflow-hidden">
           <div className="px-4 pt-3 pb-3">
-            <div className="space-y-3">
+            <div className="space-y-4">
               {POOLS.map((pool, i) => {
                 const result = data?.[i]?.result as [string, string, bigint, bigint] | undefined;
                 const r0 = result?.[2];
                 const r1 = result?.[3];
                 const p = poolPrice(r0, r1);
+                const prices = priceHistory[pool.name] || [];
+
                 return (
                   <div key={pool.name}>
                     <div className="flex items-center justify-between mb-1">
@@ -81,8 +146,14 @@ export function PoolInfo() {
                         {fmtReserve(r0)} DOT / {fmtReserve(r1)} {pool.quote}
                       </span>
                     </div>
-                    <div className="text-xs text-white/40">
-                      1 DOT <span className="text-polkadot-pink font-mono">≈ {p} {pool.quote}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/40">
+                        1 DOT <span className="text-polkadot-pink font-mono">≈ {p} {pool.quote}</span>
+                      </span>
+                      {prices.length >= 2 && <Sparkline data={prices} width={80} height={20} />}
+                      {prices.length < 2 && prices.length > 0 && (
+                        <span className="text-[10px] text-white/20">1 trade</span>
+                      )}
                     </div>
                   </div>
                 );
