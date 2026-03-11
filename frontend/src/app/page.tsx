@@ -227,7 +227,7 @@ function AnimatedDemo() {
           <span className="text-[11px] font-medium text-white/40">Live Demo</span>
         </div>
         <span className="text-[10px] text-white/20">
-          {phase === "typing" ? "User typing..." : phase === "thinking" ? "AI analyzing..." : phase === "preview" ? "Preview ready" : phase === "confirming" ? "Executing..." : phase === "success" ? "✓ Complete" : ""}
+          {phase === "typing" ? "User typing..." : phase === "thinking" ? "AI analyzing..." : phase === "preview" ? "Preview ready" : phase === "confirming" ? "On-chain verification..." : phase === "success" ? "✓ On-chain verified" : ""}
         </span>
       </div>
 
@@ -283,35 +283,69 @@ function AnimatedDemo() {
       {/* Transaction Preview Card */}
       <div className={`mt-3 rounded-2xl border bg-white/[0.03] backdrop-blur-xl p-5 space-y-4 transition-opacity duration-500 ${(phase === "preview" || phase === "confirming" || phase === "success") ? "opacity-100 border-white/[0.08]" : "opacity-0 border-transparent pointer-events-none"}`}>
 
-        {/* Success overlay */}
+        {/* Success — matches real UI: SWAP SUCCESSFUL + on-chain risk badge */}
         {phase === "success" && (
-          <div className="flex flex-col items-center justify-center gap-3 animate-fade-in-up" style={{ minHeight: 380 }}>
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-polkadot-green bg-polkadot-green/10">
-              <svg className="h-7 w-7 text-polkadot-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
+          <div className="flex flex-col items-center gap-3 animate-fade-in-up" style={{ minHeight: 380 }}>
+            {/* Header */}
+            <div className="flex items-center gap-2.5 mb-1">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-polkadot-green/20">
+                <svg className="h-4.5 w-4.5 text-polkadot-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold uppercase tracking-widest text-polkadot-green/80">Swap Successful</p>
             </div>
-            <p className="text-lg font-semibold text-white">Swap Executed!</p>
-            <div className="rounded-lg bg-white/[0.04] border border-white/[0.06] px-4 py-2.5 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-white/30 mb-1">Transaction Hash</p>
-              <p className="text-xs font-mono text-polkadot-cyan">0x7a3f...b82d</p>
+
+            {/* Swap amounts box */}
+            <div className="w-full rounded-xl bg-white/[0.04] border border-white/[0.06] p-5">
+              <div className="text-center space-y-1">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/30">Sent</p>
+                <p className="text-xl font-bold text-white">100 <span className="text-base text-white/50">DOT</span></p>
+              </div>
+              <div className="my-2.5 flex justify-center">
+                <svg className="h-4 w-4 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/30">Received</p>
+                <p className="text-xl font-bold text-polkadot-green">685.42 <span className="text-base text-polkadot-green/50">USDT</span></p>
+              </div>
             </div>
-            <div className="flex items-center gap-4 mt-1 text-xs text-white/30">
-              <span>100 DOT → 685.42 USDT</span>
-              <span className="text-polkadot-green">✓ Confirmed</span>
+
+            {/* On-chain risk badge — GREEN */}
+            <div className="w-full rounded-xl border border-polkadot-green/20 bg-polkadot-green/[0.06] p-3.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="h-2.5 w-2.5 rounded-full bg-polkadot-green" />
+                  <span className="text-sm font-semibold text-polkadot-green">GREEN</span>
+                  <span className="text-xs text-white/30">Score 4/100</span>
+                </div>
+                <span className="text-[10px] uppercase tracking-widest text-white/25">On-chain verified</span>
+              </div>
+              <div className="flex items-center gap-4 text-[11px] text-white/30">
+                <span>Impact: 0.31%</span>
+                <span>Vol: 1.00%</span>
+              </div>
+            </div>
+
+            {/* TX hash */}
+            <div className="flex items-center justify-between w-full text-xs text-white/25 px-1">
+              <span>Transaction</span>
+              <span className="font-mono text-polkadot-cyan/70">0x7a3f...b82d</span>
             </div>
           </div>
         )}
 
-        {/* Confirming state */}
+        {/* Confirming state — on-chain verification */}
         {phase === "confirming" && (
           <div className="flex flex-col items-center justify-center gap-3 animate-fade-in-up" style={{ minHeight: 380 }}>
             <div className="relative h-12 w-12">
               <div className="absolute inset-0 rounded-full border-2 border-white/10" />
-              <div className="absolute inset-0 rounded-full border-2 border-t-polkadot-pink border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+              <div className="absolute inset-0 rounded-full border-2 border-t-polkadot-green border-r-transparent border-b-transparent border-l-transparent animate-spin" />
             </div>
-            <p className="text-sm font-medium text-white/80">Confirming on-chain...</p>
-            <p className="text-xs text-white/30">Waiting for block confirmation</p>
+            <p className="text-sm font-medium text-white/80">On-chain verification...</p>
+            <p className="text-xs text-white/30">Risk Engine (Rust/PolkaVM) validating swap</p>
           </div>
         )}
 
