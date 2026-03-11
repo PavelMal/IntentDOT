@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount, useConnect, useDisconnect, useBalance, useSwitchChain } from "wagmi";
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { polkadotHubTestnet } from "@/lib/wagmi";
@@ -31,7 +31,6 @@ export function ConnectWallet() {
   }, [rawError]);
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
-  const { data: balance } = useBalance({ address });
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -61,11 +60,6 @@ export function ConnectWallet() {
   if (isConnected && address) {
     return (
       <div className="flex items-center gap-2">
-        {balance && (
-          <span className="hidden sm:inline rounded-lg bg-white/5 border border-white/[0.06] px-3 py-1.5 text-xs font-medium text-white/50">
-            {parseFloat(balance.formatted).toFixed(2)} {balance.symbol}
-          </span>
-        )}
         <div className="flex items-center gap-1 rounded-xl bg-white/5 border border-white/[0.06]">
           <span className="flex items-center gap-1.5 px-3 py-2 text-xs font-mono text-white/70">
             <span className="h-2 w-2 rounded-full bg-polkadot-green" />
