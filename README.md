@@ -188,15 +188,39 @@ Each pool (e.g. DOT/USDT, DOT/USDC) has its own price history stored in contract
 
 ## Roadmap
 
-| Phase | Feature | Description |
+### v1 — Now
+
+| Track | Feature | Description |
 |-------|---------|-------------|
-| v2 | **EIP-7702 Smooth Mode** | Zero-popup trading — sign once, trade forever. Waiting for Polkadot Hub support |
-| v2 | **NFT Trading** | Buy/sell NFTs with natural language intents |
-| v2 | **People Chain Identity** | "Send 10 USDC to Alice" — resolve name via Polkadot People Chain |
-| v2 | **XCM Multi-Chain Bridging** | Expand to third-party parachains (Moonbeam, Astar, Acala, etc.) via ReserveAssetTransfer. Currently Hub → Relay only (trusted system chains use Teleport with burn/mint). Parachains require reserve-backed transfers through an intermediary chain |
-| v2 | **XCM Cross-Chain Assets** | Bridge pallet_assets tokens (not just PAS) between chains via XCM intents |
-| v3 | **AI Trading Strategies** | DCA, stop-loss, scheduled execution |
-| v3 | **DEX Aggregation** | Route swaps through best available pool |
+| EVM | **Natural Language Intents** | Type "Swap 10 DOT to USDT" — AI parses and builds the transaction |
+| EVM | **AI Risk Guardian** | Off-chain pre-check: scores slippage, liquidity, pool drain before confirm |
+| EVM | **Token Swaps & Transfers** | Swap and send tokens via natural language |
+| EVM | **Token Factory** | Deploy ERC-20 tokens from chat, auto-whitelist on DEX |
+| EVM | **Portfolio & History** | Live token balances + full transaction log from blockchain events |
+| PVM | **Rust Risk Engine** | On-chain risk scoring (price impact, MA20, volatility). RED = auto revert |
+| PVM | **XCM Cross-Chain Bridge** | Teleport tokens between Polkadot chains via XCM Precompile |
+
+### v2 — Next
+
+| Track | Feature | Description |
+|-------|---------|-------------|
+| EVM | **EIP-7702 Smooth Mode** | Zero-popup trading — sign once, trade forever |
+| EVM | **NFT Trading** | Buy/sell NFTs with natural language intents |
+| EVM | **People Chain Identity** | Send tokens by name — resolve via Polkadot People Chain |
+| PVM | **Multi-Pool Correlation** | Detect manipulation by comparing price moves across pools |
+| PVM | **Oracle Price Feeds** | Compare pool price with external oracle (Chainlink/DIA) |
+| PVM | **Dynamic Risk Thresholds** | Adaptive scoring — stricter for new pools, lenient for mature ones |
+
+### v3 — Future
+
+| Track | Feature | Description |
+|-------|---------|-------------|
+| EVM | **AI Trading Strategies** | Describe strategy in plain English, AI executes on schedule |
+| EVM | **Liquidity Provision** | Add liquidity via natural language with impermanent loss warnings |
+| EVM | **DEX Aggregation** | Route swaps across multiple DEXes for best price |
+| PVM | **MEV Protection On-Chain** | Detect frontrunning and sandwich attacks at contract level |
+| PVM | **Cross-Chain Risk via XCM** | Risk-as-a-service — other parachains use our Risk Engine via XCM |
+| PVM | **Governance Risk Parameters** | Community votes to adjust risk thresholds without redeploying |
 
 ## Hackathon
 
@@ -204,9 +228,9 @@ Built for **Polkadot Solidity Hackathon 2026** (EVM Smart Contracts + PVM Smart 
 
 ## Tests
 
-- **Contracts:** 37 Foundry tests — swap (9), whitelist (5), transfer (4), factory (7), risk engine (11), events
-- **Frontend:** 164 Jest tests — intent validation (47), risk scoring (22), preview builder (25), risk display (28), XCM encoder (15), bridge flow (12), integration (12), E2E testnet (21)
-- **Total:** 201 tests (37 contract + 164 frontend/E2E)
+- **Contracts:** 38 Foundry tests — swap (9), whitelist (5), transfer (4), factory (7), risk engine (12), events
+- **Frontend:** 185 Jest tests — intent validation (47), risk scoring (22), preview builder (25), risk display (28), XCM encoder (15), bridge flow (12), integration (12), E2E testnet (24)
+- **Total:** 223 tests (38 contract + 185 frontend/E2E)
 - Run: `cd contracts && forge test -vvv` / `cd frontend && npm test`
 
 ## License
