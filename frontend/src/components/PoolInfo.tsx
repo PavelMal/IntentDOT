@@ -5,7 +5,7 @@ import { usePublicClient, useReadContracts } from "wagmi";
 import { formatUnits, parseAbiItem, type Address } from "viem";
 import { CONTRACTS } from "@/lib/contracts";
 import { mockDexAbi } from "@/lib/abis";
-import { Sparkline } from "./Sparkline";
+import { Sparkline, PriceChartModal } from "./Sparkline";
 
 const POOLS = [
   { name: "DOT / USDT", tokenA: CONTRACTS.dotToken, tokenB: CONTRACTS.usdtToken, quote: "USDT" },
@@ -34,6 +34,7 @@ export function PoolInfo() {
   const ref = useRef<HTMLDivElement>(null);
   const publicClient = usePublicClient();
   const [priceHistory, setPriceHistory] = useState<Record<string, number[]>>({});
+  const [chartModal, setChartModal] = useState<{ poolName: string; quote: string; prices: number[]; currentPrice: string } | null>(null);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -150,7 +151,14 @@ export function PoolInfo() {
                       <span className="text-xs text-white/40">
                         1 DOT <span className="text-polkadot-pink font-mono">≈ {p} {pool.quote}</span>
                       </span>
-                      {prices.length >= 2 && <Sparkline data={prices} width={80} height={20} />}
+                      {prices.length >= 2 && (
+                        <Sparkline
+                          data={prices}
+                          width={80}
+                          height={20}
+                          onClick={() => setChartModal({ poolName: pool.name, quote: pool.quote, prices, currentPrice: p })}
+                        />
+                      )}
                       {prices.length < 2 && prices.length > 0 && (
                         <span className="text-[10px] text-white/20">1 trade</span>
                       )}
@@ -161,6 +169,15 @@ export function PoolInfo() {
             </div>
           </div>
         </div>
+      )}
+      {chartModal && (
+        <PriceChartModal
+          poolName={chartModal.poolName}
+          quote={chartModal.quote}
+          prices={chartModal.prices}
+          currentPrice={chartModal.currentPrice}
+          onClose={() => setChartModal(null)}
+        />
       )}
     </div>
   );
