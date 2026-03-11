@@ -216,39 +216,9 @@ Each pool (e.g. DOT/USDT, DOT/USDC) has its own price history stored in contract
 
 ## Roadmap
 
-### v1 — Now
-
-| Track | Feature | Description |
-|-------|---------|-------------|
-| EVM | **Natural Language Intents** | Type "Swap 10 DOT to USDT" — AI parses and builds the transaction |
-| EVM | **AI Risk Guardian** | Off-chain pre-check: scores slippage, liquidity, pool drain before confirm |
-| EVM | **Token Swaps & Transfers** | Swap and send tokens via natural language |
-| EVM | **Token Factory** | Deploy ERC-20 tokens from chat, auto-whitelist on DEX |
-| EVM | **Portfolio & History** | Live token balances + full transaction log from blockchain events |
-| PVM | **Rust Risk Engine** | On-chain risk scoring (price impact, MA20, volatility). RED = auto revert |
-| PVM | **XCM Cross-Chain Bridge** | Teleport tokens between Polkadot chains via XCM Precompile |
-
-### v2 — Next
-
-| Track | Feature | Description |
-|-------|---------|-------------|
-| EVM | **EIP-7702 Smooth Mode** | Zero-popup trading — sign once, trade forever |
-| EVM | **NFT Trading** | Buy/sell NFTs with natural language intents |
-| EVM | **People Chain Identity** | Send tokens by name — resolve via Polkadot People Chain |
-| PVM | **Multi-Pool Correlation** | Detect manipulation by comparing price moves across pools |
-| PVM | **Oracle Price Feeds** | Compare pool price with external oracle (Chainlink/DIA) |
-| PVM | **Dynamic Risk Thresholds** | Adaptive scoring — stricter for new pools, lenient for mature ones |
-
-### v3 — Future
-
-| Track | Feature | Description |
-|-------|---------|-------------|
-| EVM | **AI Trading Strategies** | Describe strategy in plain English, AI executes on schedule |
-| EVM | **Liquidity Provision** | Add liquidity via natural language with impermanent loss warnings |
-| EVM | **DEX Aggregation** | Route swaps across multiple DEXes for best price |
-| PVM | **MEV Protection On-Chain** | Detect frontrunning and sandwich attacks at contract level |
-| PVM | **Cross-Chain Risk via XCM** | Risk-as-a-service — other parachains use our Risk Engine via XCM |
-| PVM | **Governance Risk Parameters** | Community votes to adjust risk thresholds without redeploying |
+<p align="center">
+  <img src="frontend/public/roadmap.svg" alt="IntentDOT Roadmap — v1 Now, v2 Next, v3 Future" width="960"/>
+</p>
 
 ## Hackathon
 
