@@ -73,10 +73,10 @@ export function PriceChartModal({ poolName, quote, prices, currentPrice, onClose
   const areaPoints = `${coords[0].x},${h - pad} ${polyline} ${coords[coords.length - 1].x},${h - pad}`;
 
   const modal = (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex justify-center pt-20" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="relative w-[380px] rounded-2xl border border-white/[0.08] bg-[#1a1425] shadow-2xl animate-fade-in-up"
+        className="relative h-fit w-[380px] rounded-2xl border border-white/[0.08] bg-[#1a1425] shadow-2xl animate-fade-in-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
