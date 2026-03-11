@@ -28,6 +28,10 @@ DeFi на Polkadot требует навигации между множеств
 12. [x] Create token via ERC20 factory — T024
 13. [x] Quote expiry timer (30s countdown) — T021
 14. [x] XCM cross-chain bridge: teleport PAS from Hub to Paseo Relay Chain via XCM precompile — T031, T032 (relay only, PAS only)
+15. [x] On-chain Transaction History — swap/transfer/token-create events from blockchain — T060
+16. [x] Portfolio Dashboard — token balances dropdown in header — T061
+17. [x] Pool Info Panel — live prices + reserves dropdown in header — T062
+18. [x] Quick Action chips above chat input — T063
 
 ## Out of Scope (Roadmap / Nice-to-Have)
 

@@ -146,5 +146,9 @@ Testing the full IntentDOT pipeline: natural language input → AI parsing → r
 - [x] TX Preview shows correct amounts (Uniswap V2 formula verified in tests)
 - [x] Confirm button disabled when Risk = RED
 - [x] Full e2e flow works on testnet (3 successful swaps) — T014 ✅
+- [x] On-chain Transaction History shows swaps, transfers, token creations from blockchain events
+- [x] Portfolio balances + Pool info dropdowns in header with 12s auto-refresh
+- [x] Quick Action chips trigger intents correctly
+- [x] Risk Engine price normalization fix deployed + verified (GREEN on normal swaps)
 - [x] No console errors in production build
 - [ ] Demo video demonstrates happy path + risk blocking — T015
