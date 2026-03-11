@@ -72,10 +72,12 @@ export function TransactionHistory() {
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="text-xs text-white/60">
-                        {e.intentType === "swap" ? "Swap" : e.intentType === "transfer" ? "Transfer" : e.intentType}
+                        {e.intentType === "swap" ? "Swap" : e.intentType === "transfer" ? "Transfer" : e.intentType === "create_token" ? "Create Token" : e.intentType}
                       </span>
                       <span className="text-[11px] text-white/35">
-                        {e.amountIn} {e.tokenIn} → {e.amountOut} {e.tokenOut}
+                        {e.intentType === "create_token"
+                          ? `${e.tokenIn} — ${e.amountIn} supply`
+                          : `${e.amountIn} ${e.tokenIn} → ${e.amountOut} ${e.tokenOut}`}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">

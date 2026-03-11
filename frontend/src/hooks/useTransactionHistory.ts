@@ -19,6 +19,10 @@ const INTENT_EXECUTED_EVENT = parseAbiItem(
   "event IntentExecuted(address indexed user, string intentType, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut)"
 );
 
+const TOKEN_CREATED_EVENT = parseAbiItem(
+  "event TokenCreated(address indexed creator, address indexed tokenAddress, string name, string symbol, uint256 initialSupply)"
+);
+
 // Reverse lookup: address → symbol
 const ADDR_TO_SYMBOL: Record<string, string> = {};
 for (const [symbol, info] of Object.entries(TOKEN_MAP)) {
@@ -52,26 +56,47 @@ export function useTransactionHistory() {
       // Scan last ~50K blocks (~7 days on Polkadot Hub)
       const fromBlock = currentBlock > 50_000n ? currentBlock - 50_000n : 0n;
 
-      const logs = await publicClient.getLogs({
-        address: CONTRACTS.intentExecutor as Address,
-        event: INTENT_EXECUTED_EVENT,
-        args: { user: address },
-        fromBlock,
-        toBlock: "latest",
-      });
+      // Fetch IntentExecuted + TokenCreated in parallel
+      const [intentLogs, tokenLogs] = await Promise.all([
+        publicClient.getLogs({
+          address: CONTRACTS.intentExecutor as Address,
+          event: INTENT_EXECUTED_EVENT,
+          args: { user: address },
+          fromBlock,
+          toBlock: "latest",
+        }),
+        publicClient.getLogs({
+          address: CONTRACTS.tokenFactory as Address,
+          event: TOKEN_CREATED_EVENT,
+          args: { creator: address },
+          fromBlock,
+          toBlock: "latest",
+        }),
+      ]);
 
-      const items: HistoryEntry[] = logs.map((log) => ({
-        txHash: log.transactionHash,
-        blockNumber: log.blockNumber,
-        intentType: (log.args.intentType as string) || "swap",
-        tokenIn: resolveSymbol(log.args.tokenIn as string),
-        tokenOut: resolveSymbol(log.args.tokenOut as string),
-        amountIn: fmtAmount(log.args.amountIn as bigint),
-        amountOut: fmtAmount(log.args.amountOut as bigint),
-      }));
+      const items: HistoryEntry[] = [
+        ...intentLogs.map((log) => ({
+          txHash: log.transactionHash,
+          blockNumber: log.blockNumber,
+          intentType: (log.args.intentType as string) || "swap",
+          tokenIn: resolveSymbol(log.args.tokenIn as string),
+          tokenOut: resolveSymbol(log.args.tokenOut as string),
+          amountIn: fmtAmount(log.args.amountIn as bigint),
+          amountOut: fmtAmount(log.args.amountOut as bigint),
+        })),
+        ...tokenLogs.map((log) => ({
+          txHash: log.transactionHash,
+          blockNumber: log.blockNumber,
+          intentType: "create_token",
+          tokenIn: log.args.symbol as string,
+          tokenOut: "",
+          amountIn: fmtAmount(log.args.initialSupply as bigint),
+          amountOut: "",
+        })),
+      ];
 
-      // Most recent first
-      items.reverse();
+      // Sort by block number descending (most recent first)
+      items.sort((a, b) => (b.blockNumber > a.blockNumber ? 1 : b.blockNumber < a.blockNumber ? -1 : 0));
       setEntries(items);
     } catch {
       // RPC may not support large range — silently fail
