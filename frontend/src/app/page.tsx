@@ -48,9 +48,9 @@ function FeatureIcon({ name }: { name: string }) {
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
       </svg>
     ),
-    send: (
+    bridge: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
       </svg>
     ),
     sparkle: (
@@ -58,14 +58,14 @@ function FeatureIcon({ name }: { name: string }) {
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
       </svg>
     ),
-    lock: (
+    chart: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
       </svg>
     ),
-    cursor: (
+    history: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
       </svg>
     ),
   };
@@ -74,12 +74,12 @@ function FeatureIcon({ name }: { name: string }) {
 
 /* ── Feature Data ───────────────────────────────────────── */
 const features = [
-  { icon: "chat", title: "Natural Language DeFi", desc: "Type what you want in plain English. Our AI understands your intent and builds the perfect transaction.", borderColor: "border-polkadot-pink/30", bgColor: "bg-polkadot-pink/10", textColor: "text-polkadot-pink" },
-  { icon: "shield", title: "AI Risk Guardian", desc: "Every transaction is scored for risk. Slippage, liquidity depth, and pool drain are evaluated before you confirm.", borderColor: "border-polkadot-green/30", bgColor: "bg-polkadot-green/10", textColor: "text-polkadot-green" },
-  { icon: "send", title: "Token Transfers", desc: "Send tokens to any address with a simple command. Whitelist-protected for safety.", borderColor: "border-polkadot-cyan/30", bgColor: "bg-polkadot-cyan/10", textColor: "text-polkadot-cyan" },
-  { icon: "sparkle", title: "Token Factory", desc: "Create your own ERC-20 token in seconds. Just describe the name, symbol, and supply.", borderColor: "border-polkadot-purple/30", bgColor: "bg-polkadot-purple/10", textColor: "text-polkadot-purple" },
-  { icon: "lock", title: "On-Chain Whitelist", desc: "Only whitelisted tokens can be traded or transferred. Owner-controlled security layer.", borderColor: "border-yellow-500/30", bgColor: "bg-yellow-500/10", textColor: "text-yellow-400" },
-  { icon: "cursor", title: "One-Click Execution", desc: "Preview the full transaction, check the risk score, then execute with a single click.", borderColor: "border-polkadot-pink/30", bgColor: "bg-polkadot-pink/10", textColor: "text-polkadot-pink" },
+  { icon: "chat", title: "Natural Language DeFi", desc: "Type what you want in plain English. Swap tokens, send transfers, create tokens, or bridge cross-chain — all from one chat.", borderColor: "border-polkadot-pink/30", bgColor: "bg-polkadot-pink/10", textColor: "text-polkadot-pink" },
+  { icon: "shield", title: "AI Risk Guardian", desc: "On-chain Rust smart contract scores every swap for risk. Slippage, liquidity, volatility, and pool drain — evaluated before you confirm.", borderColor: "border-polkadot-green/30", bgColor: "bg-polkadot-green/10", textColor: "text-polkadot-green" },
+  { icon: "bridge", title: "XCM Cross-Chain Bridge", desc: "Bridge PAS tokens from Polkadot Hub to Relay Chain via XCM. One command, fully on-chain teleport.", borderColor: "border-polkadot-cyan/30", bgColor: "bg-polkadot-cyan/10", textColor: "text-polkadot-cyan" },
+  { icon: "sparkle", title: "Token Factory", desc: "Create your own ERC-20 token in seconds. Just describe the name, symbol, and supply — auto-whitelisted for trading.", borderColor: "border-polkadot-purple/30", bgColor: "bg-polkadot-purple/10", textColor: "text-polkadot-purple" },
+  { icon: "chart", title: "Live Portfolio & Markets", desc: "Real-time token balances, pool reserves, live prices, and mini price charts with sparklines — all in the header.", borderColor: "border-yellow-500/30", bgColor: "bg-yellow-500/10", textColor: "text-yellow-400" },
+  { icon: "history", title: "On-Chain History", desc: "Full transaction history pulled from blockchain events. Swaps, transfers, token creations, and bridges — with Blockscout links.", borderColor: "border-polkadot-pink/30", bgColor: "bg-polkadot-pink/10", textColor: "text-polkadot-pink" },
 ];
 
 /* ── Steps Data ─────────────────────────────────────────── */
@@ -107,7 +107,7 @@ const roadmapPhases = [
     badgeColor: "border-polkadot-purple/30 bg-polkadot-purple/10 text-polkadot-purple",
     items: [
       { text: "AI Trading Strategies", desc: "DCA, stop-loss, scheduled intents", icon: "🤖" },
-      { text: "XCM Cross-Chain Swaps", desc: "Trade across parachains seamlessly", icon: "🔗" },
+      { text: "Multi-Chain XCM Bridging", desc: "Bridge to any parachain, not just Relay", icon: "🔗" },
       { text: "DEX Aggregation", desc: "Best price across multiple liquidity pools", icon: "📊" },
     ],
   },
@@ -412,7 +412,7 @@ export default function Home() {
               href="/chat"
               className="rounded-xl border border-polkadot-pink/30 bg-polkadot-pink/10 px-4 py-2.5 text-sm font-semibold text-polkadot-pink hover:bg-polkadot-pink/20 transition-all"
             >
-              Launch App
+              Open Chat
             </Link>
           )}
           <ConnectWallet />
@@ -456,9 +456,12 @@ export default function Home() {
                 {isConnected ? (
                   <Link
                     href="/chat"
-                    className="inline-block rounded-xl bg-polkadot-pink px-8 py-3 text-base font-semibold text-white hover:bg-polkadot-pink/80 transition-all hover:shadow-lg hover:shadow-polkadot-pink/20 active:scale-[0.98]"
+                    className="inline-flex items-center gap-2 rounded-xl bg-polkadot-pink px-8 py-3 text-base font-semibold text-white hover:bg-polkadot-pink/80 transition-all hover:shadow-lg hover:shadow-polkadot-pink/20 active:scale-[0.98]"
                   >
-                    Launch App
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                    </svg>
+                    Start Chatting
                   </Link>
                 ) : (
                   <ConnectWallet />
@@ -576,9 +579,12 @@ export default function Home() {
                 {isConnected ? (
                   <Link
                     href="/chat"
-                    className="inline-block rounded-xl bg-polkadot-pink px-8 py-3 text-base font-semibold text-white hover:bg-polkadot-pink/80 transition-all hover:shadow-lg hover:shadow-polkadot-pink/20 active:scale-[0.98]"
+                    className="inline-flex items-center gap-2 rounded-xl bg-polkadot-pink px-8 py-3 text-base font-semibold text-white hover:bg-polkadot-pink/80 transition-all hover:shadow-lg hover:shadow-polkadot-pink/20 active:scale-[0.98]"
                   >
-                    Launch App
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                    </svg>
+                    Start Chatting
                   </Link>
                 ) : (
                   <ConnectWallet />
