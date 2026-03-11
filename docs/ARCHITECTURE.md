@@ -71,7 +71,8 @@
 
 ### Execution Hooks (Frontend)
 - **Responsibility:** Handle approve → execute flows via wagmi/viem
-- **Files:** `src/hooks/useSwapExecution.ts`, `src/hooks/useTransferExecution.ts`, `src/hooks/useTokenCreation.ts`, `src/lib/abis.ts`, `src/lib/risk-display.ts`
+- **Files:** `src/hooks/useSwapExecution.ts`, `src/hooks/useTransferExecution.ts`, `src/hooks/useTokenCreation.ts`, `src/hooks/useBridgeExecution.ts`, `src/hooks/useTransactionHistory.ts`, `src/lib/abis.ts`, `src/lib/risk-display.ts`
+- **Transaction History:** `useTransactionHistory` reads `IntentExecuted` events from chain via `getLogs` (last 50K blocks), no backend needed
 - **Swap Flow:** Check balance → check/set allowance → call IntentExecutor.executeSwap → wait for receipt → parse RiskChecked event → show on-chain risk badge
 - **Transfer Flow:** Check balance → approve → IntentExecutor.executeTransfer → receipt
 - **Create Flow:** Call TokenFactory.createToken → parse TokenCreated event → receipt

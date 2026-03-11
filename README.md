@@ -20,6 +20,9 @@ IntentDOT lets you execute DeFi operations on Polkadot by simply typing what you
 - **On-Chain Whitelist** — Only verified tokens can be swapped/transferred (security layer)
 - **Quote Expiry Timer** — 30s countdown on previews, auto-refresh with live pool data
 - **One-Click Execution** — Preview exact amounts + risk, confirm, done
+- **On-Chain Transaction History** — All swaps and transfers pulled directly from blockchain events (no backend)
+- **Live Portfolio & Pool Data** — Token balances and pool prices/reserves in header, auto-refreshing
+- **Quick Actions** — One-click chips for common intents (swap, bridge, balance, create token)
 - **XCM Cross-Chain Teleport** — "Bridge 20 PAS to relay chain" — teleport native PAS to Paseo Relay Chain via XCM precompile. Uses burn/mint between trusted system chains (Hub ↔ Relay)
 - **Polkadot Hub Native** — Solidity + Rust contracts on Polkadot Hub EVM & PolkaVM
 

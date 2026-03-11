@@ -464,6 +464,78 @@ tasks:
     tags: [submission, pvm-track]
     notes: "Separate submission for PVM Smart Contracts track. Link same repo, highlight PVM + XCM features."
 
+  # ============================================================
+  # UI ENHANCEMENTS — Phase 4
+  # Goal: Richer UI for demo impact + hackathon judges
+  # ============================================================
+
+  - id: T060
+    subject: "Transaction History from on-chain events"
+    status: completed
+    priority: P1
+    estimate_hours: 3
+    owner: claude
+    blocked_by: []
+    tags: [frontend, enhancement]
+    notes: |
+      Read IntentExecuted, Swapped, RiskChecked events via viem getLogs filtered by user address.
+      Display as scrollable list: date, action (swap/transfer), tokens, amount, risk badge, tx link.
+      Bridge txs cached in localStorage as fallback (XCM precompile has no custom events).
+      Component: TransactionHistory.tsx. Hook: useTransactionHistory.ts.
+
+  - id: T061
+    subject: "Portfolio Dashboard — all token balances"
+    status: completed
+    priority: P1
+    estimate_hours: 2
+    owner: claude
+    blocked_by: []
+    tags: [frontend, enhancement]
+    notes: |
+      Card at top of page showing balances: PAS (native), DOT, USDT, USDC + tokens created via factory.
+      Read balances via multicall (useBalance + useReadContracts). Show token icons/symbols + USD value.
+      Compact horizontal layout. Auto-refresh on new block.
+
+  - id: T062
+    subject: "Pool Info Panel — live prices + reserves"
+    status: completed
+    priority: P1
+    estimate_hours: 2
+    owner: claude
+    blocked_by: []
+    tags: [frontend, enhancement]
+    notes: |
+      Show DOT/USDT and DOT/USDC pool data: current price, reserves, 24h volume (from event count).
+      Data from MockDEX.getPool() — already have usePoolReserves hook.
+      Compact cards below portfolio. Updates on each block.
+
+  - id: T063
+    subject: "Quick Action chips above chat input"
+    status: completed
+    priority: P1
+    estimate_hours: 1
+    owner: claude
+    blocked_by: []
+    tags: [frontend, enhancement]
+    notes: |
+      Clickable chips/buttons above input: "Swap DOT → USDT", "Swap DOT → USDC",
+      "Bridge PAS to Relay", "My Balance", "Create Token".
+      Click fills input with the text and auto-submits. Simple UX shortcut.
+
+  - id: T064
+    subject: "Mini Price Chart from RiskEngine MA20 data"
+    status: pending
+    priority: P1
+    estimate_hours: 3
+    owner: unassigned
+    blocked_by: [T062]
+    tags: [frontend, enhancement]
+    notes: |
+      Sparkline chart of last 20 prices from RiskEngine ring buffer.
+      Read all 20 price slots via getStats() or direct storage reads.
+      Lightweight SVG sparkline (no chart library — just polyline).
+      Show in Pool Info panel. Unique selling point: "price history from Rust contract".
+
   # --- Deferred (not for hackathon) ---
 
   - id: T020
