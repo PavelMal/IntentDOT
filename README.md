@@ -57,37 +57,63 @@ User: "Swap 10 DOT to USDT"
 ### Prerequisites
 
 - Node.js 20+
-- Foundry nightly
-- MetaMask
+- Foundry nightly (`curl -L https://foundry.paradigm.xyz | bash && foundryup --install nightly`)
+- MetaMask browser extension
 
-### Setup
+### 1. Install & Configure
 
 ```bash
+git clone https://github.com/PavelMal/IntentDOT.git
+cd IntentDOT
+
 # Install frontend
-cd frontend && npm install
+cd frontend
+npm install
 
-# Configure
-cp .env.example .env.local
-# Required (set ONE): ANTHROPIC_API_KEY=sk-ant-... or OPENAI_API_KEY=sk-...
-# Optional (for on-chain): NEXT_PUBLIC_INTENT_EXECUTOR, NEXT_PUBLIC_MOCK_DEX,
-#   NEXT_PUBLIC_DOT_TOKEN, NEXT_PUBLIC_USDT_TOKEN, NEXT_PUBLIC_USDC_TOKEN,
-#   NEXT_PUBLIC_TOKEN_FACTORY
-
-# Install contract dependencies
-cd ../contracts && forge install
-
-# Compile contracts
-forge build
-
-# Run tests
-forge test -vvv             # 37 contract tests
-cd ../frontend && npm test  # 141 frontend + E2E tests
-
-# Start dev server
-cd frontend && npm run dev
+# Configure environment
+cp ../.env.example .env.local
+# Edit .env.local — set your AI key (one of):
+#   ANTHROPIC_API_KEY=sk-ant-...
+#   OPENAI_API_KEY=sk-...
 ```
 
-### Deploy to Testnet
+### 2. Add MetaMask Network
+
+Add Polkadot Hub TestNet to MetaMask manually:
+
+| Setting | Value |
+|---------|-------|
+| RPC URL | `https://eth-rpc-testnet.polkadot.io/` |
+| Chain ID | `420420417` |
+| Symbol | `PAS` |
+| Explorer | `https://blockscout-testnet.polkadot.io` |
+
+Get testnet tokens: [faucet.polkadot.io](https://faucet.polkadot.io/) → Polkadot testnet (Paseo) → Hub (smart contracts)
+
+### 3. Run
+
+```bash
+# Start dev server (from frontend/)
+npm run dev
+# Open http://localhost:3000
+```
+
+The app connects to already deployed contracts on Polkadot Hub TestNet — no local deployment needed.
+
+### 4. Run Tests
+
+```bash
+# Contract tests (38 tests)
+cd contracts
+forge install
+forge test -vvv
+
+# Frontend tests (185 tests)
+cd frontend
+npm test
+```
+
+### Deploy Your Own Contracts (optional)
 
 ```bash
 cd contracts
@@ -95,6 +121,8 @@ forge script script/Deploy.s.sol \
   --rpc-url https://eth-rpc-testnet.polkadot.io/ \
   --private-key $DEPLOYER_PRIVATE_KEY \
   --broadcast --legacy
+
+# Then update frontend/.env.local with new contract addresses
 ```
 
 ## Tech Stack
