@@ -44,9 +44,11 @@ cache/
 broadcast/
 contracts/.env
 
-# Internal docs (not for public repo)
-docs/
+# Internal docs
+docs/*
 !docs/index.html
+!docs/pitch-evm.html
+!docs/pitch-pvm.html
 
 # Internal scripts
 scripts/
