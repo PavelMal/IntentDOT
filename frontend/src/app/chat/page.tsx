@@ -3,6 +3,7 @@
 import { ConnectWallet } from "@/components/ConnectWallet";
 import { Chat } from "@/components/Chat";
 import { PortfolioDashboard } from "@/components/PortfolioDashboard";
+import { PoolInfo } from "@/components/PoolInfo";
 import { useAccount } from "wagmi";
 import { useState, useEffect } from "react";
 import { polkadotHubTestnet } from "@/lib/wagmi";
@@ -34,10 +35,11 @@ export default function ChatPage() {
         </div>
       </header>
 
-      {/* Portfolio */}
+      {/* Portfolio + Pools */}
       {mounted && isCorrectChain && (
-        <div className="border-b border-white/[0.04] px-6 py-2.5">
+        <div className="flex items-center justify-between gap-4 border-b border-white/[0.04] px-6 py-2.5 overflow-x-auto">
           <PortfolioDashboard />
+          <PoolInfo />
         </div>
       )}
 
