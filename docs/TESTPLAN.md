@@ -147,6 +147,7 @@ Testing the full IntentDOT pipeline: natural language input → AI parsing → r
 - [x] Confirm button disabled when Risk = RED
 - [x] Full e2e flow works on testnet (3 successful swaps) — T014 ✅
 - [x] On-chain Transaction History shows swaps, transfers, token creations from blockchain events
+- [x] Bridge transactions shown in history via Blockscout API with amount (XCM precompile has no custom events)
 - [x] Portfolio balances + Pool info dropdowns in header with 12s auto-refresh
 - [x] Quick Action chips trigger intents correctly
 - [x] Risk Engine price normalization fix deployed + verified (GREEN on normal swaps)

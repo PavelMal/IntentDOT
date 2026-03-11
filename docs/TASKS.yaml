@@ -478,9 +478,9 @@ tasks:
     blocked_by: []
     tags: [frontend, enhancement]
     notes: |
-      Read IntentExecuted, Swapped, RiskChecked events via viem getLogs filtered by user address.
-      Display as scrollable list: date, action (swap/transfer), tokens, amount, risk badge, tx link.
-      Bridge txs cached in localStorage as fallback (XCM precompile has no custom events).
+      Read IntentExecuted + TokenCreated events via viem getLogs filtered by user address (last 200K blocks).
+      Bridge txs fetched via Blockscout API (txlist filtered by XCM precompile address, amount from tx value).
+      Display as scrollable list: action (swap/transfer/create/bridge), tokens, amount, tx link to Blockscout.
       Component: TransactionHistory.tsx. Hook: useTransactionHistory.ts.
 
   - id: T061

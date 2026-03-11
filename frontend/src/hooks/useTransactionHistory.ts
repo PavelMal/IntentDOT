@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAccount, usePublicClient } from "wagmi";
 import { formatUnits, type Address, parseAbiItem } from "viem";
 import { CONTRACTS, TOKEN_MAP } from "@/lib/contracts";
+import { XCM_PRECOMPILE } from "@/lib/xcm-encoder";
 
 export interface HistoryEntry {
   txHash: string;
@@ -100,6 +101,31 @@ export function useTransactionHistory() {
           });
         }
       } catch { /* TokenCreated fetch failed — continue */ }
+
+      // Fetch bridge txs via Blockscout API (XCM precompile emits no custom events)
+      try {
+        const res = await fetch(
+          `https://blockscout-testnet.polkadot.io/api?module=account&action=txlist&address=${address}&filter_by=from&sort=desc&page=1&offset=50`
+        );
+        const json = await res.json();
+        if (json.status === "1" && Array.isArray(json.result)) {
+          const xcmAddr = XCM_PRECOMPILE.toLowerCase();
+          for (const tx of json.result) {
+            if (tx.to?.toLowerCase() !== xcmAddr) continue;
+            if (tx.isError === "1" || tx.txreceipt_status === "0") continue;
+            const valueBig = BigInt(tx.value || "0");
+            items.push({
+              txHash: tx.hash,
+              blockNumber: BigInt(tx.blockNumber),
+              intentType: "bridge",
+              tokenIn: "PAS",
+              tokenOut: "Relay Chain",
+              amountIn: valueBig > 0n ? fmtAmount(valueBig) : "",
+              amountOut: "",
+            });
+          }
+        }
+      } catch { /* Blockscout API may be unavailable */ }
 
       // Sort by block number descending (most recent first)
       items.sort((a, b) => (b.blockNumber > a.blockNumber ? 1 : b.blockNumber < a.blockNumber ? -1 : 0));
