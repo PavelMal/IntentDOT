@@ -607,7 +607,7 @@ export function Chat() {
       </div>
 
       {/* Quick Actions */}
-      {messages.length <= 1 && address && (
+      {address && (
         <div className="flex flex-wrap gap-2 px-4 pb-2">
           {[
             { label: "Swap DOT → USDT", text: "Swap 10 DOT to USDT" },

@@ -2,6 +2,7 @@
 
 import { ConnectWallet } from "@/components/ConnectWallet";
 import { Chat } from "@/components/Chat";
+import { PortfolioDashboard } from "@/components/PortfolioDashboard";
 import { useAccount } from "wagmi";
 import { useState, useEffect } from "react";
 import { polkadotHubTestnet } from "@/lib/wagmi";
@@ -32,6 +33,13 @@ export default function ChatPage() {
           <ConnectWallet />
         </div>
       </header>
+
+      {/* Portfolio */}
+      {mounted && isCorrectChain && (
+        <div className="border-b border-white/[0.04] px-6 py-2.5">
+          <PortfolioDashboard />
+        </div>
+      )}
 
       {/* Content */}
       {!mounted ? null : isCorrectChain ? (
