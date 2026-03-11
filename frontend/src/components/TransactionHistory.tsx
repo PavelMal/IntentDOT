@@ -77,7 +77,9 @@ export function TransactionHistory() {
                       <span className="text-[11px] text-white/35">
                         {e.intentType === "create_token"
                           ? `${e.tokenIn} — ${e.amountIn} supply`
-                          : `${e.amountIn} ${e.tokenIn} → ${e.amountOut} ${e.tokenOut}`}
+                          : e.intentType === "transfer"
+                            ? `${e.amountIn} ${e.tokenIn} to ${e.tokenOut}`
+                            : `${e.amountIn} ${e.tokenIn} → ${e.amountOut} ${e.tokenOut}`}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
