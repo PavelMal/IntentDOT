@@ -56,44 +56,50 @@ export function useTransactionHistory() {
       // Scan last ~200K blocks (~1 month on Polkadot Hub, ~6s/block)
       const fromBlock = currentBlock > 200_000n ? currentBlock - 200_000n : 0n;
 
-      // Fetch IntentExecuted + TokenCreated in parallel
-      const [intentLogs, tokenLogs] = await Promise.all([
-        publicClient.getLogs({
+      // Fetch IntentExecuted + TokenCreated independently (one failing shouldn't break the other)
+      const items: HistoryEntry[] = [];
+
+      try {
+        const intentLogs = await publicClient.getLogs({
           address: CONTRACTS.intentExecutor as Address,
           event: INTENT_EXECUTED_EVENT,
           args: { user: address },
           fromBlock,
           toBlock: "latest",
-        }),
-        publicClient.getLogs({
+        });
+        for (const log of intentLogs) {
+          items.push({
+            txHash: log.transactionHash,
+            blockNumber: log.blockNumber,
+            intentType: (log.args.intentType as string) || "swap",
+            tokenIn: resolveSymbol(log.args.tokenIn as string),
+            tokenOut: resolveSymbol(log.args.tokenOut as string),
+            amountIn: fmtAmount(log.args.amountIn as bigint),
+            amountOut: fmtAmount(log.args.amountOut as bigint),
+          });
+        }
+      } catch { /* IntentExecuted fetch failed — continue */ }
+
+      try {
+        const tokenLogs = await publicClient.getLogs({
           address: CONTRACTS.tokenFactory as Address,
           event: TOKEN_CREATED_EVENT,
           args: { creator: address },
           fromBlock,
           toBlock: "latest",
-        }),
-      ]);
-
-      const items: HistoryEntry[] = [
-        ...intentLogs.map((log) => ({
-          txHash: log.transactionHash,
-          blockNumber: log.blockNumber,
-          intentType: (log.args.intentType as string) || "swap",
-          tokenIn: resolveSymbol(log.args.tokenIn as string),
-          tokenOut: resolveSymbol(log.args.tokenOut as string),
-          amountIn: fmtAmount(log.args.amountIn as bigint),
-          amountOut: fmtAmount(log.args.amountOut as bigint),
-        })),
-        ...tokenLogs.map((log) => ({
-          txHash: log.transactionHash,
-          blockNumber: log.blockNumber,
-          intentType: "create_token",
-          tokenIn: log.args.symbol as string,
-          tokenOut: "",
-          amountIn: fmtAmount(log.args.initialSupply as bigint),
-          amountOut: "",
-        })),
-      ];
+        });
+        for (const log of tokenLogs) {
+          items.push({
+            txHash: log.transactionHash,
+            blockNumber: log.blockNumber,
+            intentType: "create_token",
+            tokenIn: log.args.symbol as string,
+            tokenOut: "",
+            amountIn: fmtAmount(log.args.initialSupply as bigint),
+            amountOut: "",
+          });
+        }
+      } catch { /* TokenCreated fetch failed — continue */ }
 
       // Sort by block number descending (most recent first)
       items.sort((a, b) => (b.blockNumber > a.blockNumber ? 1 : b.blockNumber < a.blockNumber ? -1 : 0));
