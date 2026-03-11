@@ -53,8 +53,8 @@ export function useTransactionHistory() {
     setLoading(true);
     try {
       const currentBlock = await publicClient.getBlockNumber();
-      // Scan last ~50K blocks (~7 days on Polkadot Hub)
-      const fromBlock = currentBlock > 50_000n ? currentBlock - 50_000n : 0n;
+      // Scan last ~200K blocks (~1 month on Polkadot Hub, ~6s/block)
+      const fromBlock = currentBlock > 200_000n ? currentBlock - 200_000n : 0n;
 
       // Fetch IntentExecuted + TokenCreated in parallel
       const [intentLogs, tokenLogs] = await Promise.all([
