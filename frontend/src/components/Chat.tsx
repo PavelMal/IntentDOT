@@ -217,9 +217,7 @@ export function Chat() {
   }, [addMessage, executeBridge, resetBridge, getExplorerUrl, address]);
 
   // === SUBMIT ===
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const text = input.trim();
+  const sendMessage = async (text: string) => {
     if (!text || isLoading) return;
 
     setInput("");
@@ -264,6 +262,11 @@ export function Chat() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendMessage(input.trim());
   };
 
   // --- Intent handlers ---
@@ -602,6 +605,29 @@ export function Chat() {
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Quick Actions */}
+      {messages.length <= 1 && address && (
+        <div className="flex flex-wrap gap-2 px-4 pb-2">
+          {[
+            { label: "Swap DOT → USDT", text: "Swap 10 DOT to USDT" },
+            { label: "Swap DOT → USDC", text: "Swap 10 DOT to USDC" },
+            { label: "Bridge to Relay", text: "Bridge 20 PAS to relay chain" },
+            { label: "My Balance", text: "What's my balance?" },
+            { label: "Create Token", text: "Create token MEME with 1000000 supply" },
+          ].map((action) => (
+            <button
+              key={action.label}
+              type="button"
+              onClick={() => sendMessage(action.text)}
+              disabled={isLoading || isExecuting}
+              className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-xs text-white/50 hover:text-white/80 hover:border-polkadot-pink/30 hover:bg-polkadot-pink/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Input */}
       <form onSubmit={handleSubmit} className="border-t border-white/[0.06] p-4">
