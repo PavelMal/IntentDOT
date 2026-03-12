@@ -66,7 +66,7 @@ export function ConnectWallet() {
             {address.slice(0, 6)}...{address.slice(-4)}
           </span>
           <button
-            onClick={() => disconnect()}
+            onClick={() => { disconnect(); router.push("/"); }}
             className="border-l border-white/[0.06] px-3 py-2 text-xs text-white/30 hover:text-white/60 transition-colors"
           >
             &times;
