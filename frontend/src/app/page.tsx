@@ -92,26 +92,74 @@ const steps = [
 /* ── Roadmap Data ───────────────────────────────────────── */
 const roadmapPhases = [
   {
-    phase: "v2",
-    label: "Next Up",
+    phase: "v1",
+    label: "Now",
     badgeColor: "border-polkadot-green/30 bg-polkadot-green/10 text-polkadot-green",
     items: [
-      { text: "EIP-7702 Smooth Mode", desc: "Zero-popup trading — sign once, trade forever", icon: "⚡" },
-      { text: "NFT Buying & Selling", desc: "Trade NFTs with natural language intents", icon: "🖼" },
-      { text: "People Chain Identity", desc: "Send tokens by name instead of address", icon: "👤" },
+      { text: "Natural Language Swaps", desc: "Type \"swap 100 DOT to USDT\" in plain English. AI parses your intent and builds the transaction automatically.", track: "evm" as const },
+      { text: "AI Risk Guardian", desc: "AI scores every swap by price impact, volatility, and liquidity. GREEN = safe, YELLOW = warning, RED = blocked.", track: "evm" as const },
+      { text: "Token Transfers", desc: "Send tokens to any address with natural language. \"Send 50 USDT to 0x...\" — parsed and executed in one step.", track: "evm" as const },
+      { text: "Token Factory", desc: "Deploy your own ERC-20 token with a chat command. Auto-whitelisted on MockDEX for immediate trading.", track: "evm" as const },
+      { text: "Portfolio & History", desc: "Real-time token balances and full transaction log pulled from blockchain events.", track: "evm" as const },
+      { text: "Rust Risk Engine", desc: "Rust smart contract on PolkaVM that scores every swap by price impact, MA20 deviation, and volatility. RED = automatic revert.", track: "pvm" as const },
+      { text: "XCM Cross-Chain Bridge", desc: "Transfer tokens between Polkadot chains via XCM Precompile. Natural language command to XCM teleport in one click.", track: "pvm" as const },
+    ],
+  },
+  {
+    phase: "v2",
+    label: "Next",
+    badgeColor: "border-white/20 bg-white/[0.06] text-white/70",
+    items: [
+      { text: "EIP-7702 Smooth Mode", desc: "Account abstraction via EIP-7702. No more MetaMask popups — transactions feel like Web2.", track: "evm" as const },
+      { text: "NFT Trading", desc: "Buy, sell, and transfer NFTs through natural language. AI handles marketplace interaction.", track: "evm" as const },
+      { text: "People Chain Identity", desc: "Send tokens by name instead of address. \"Send 50 USDT to Alice\" — resolves People Chain identity to wallet address.", track: "evm" as const },
+      { text: "Multi-Pool Correlation", desc: "Analyze correlations between pools. If DOT/USDT drops but DOT/USDC doesn't — likely manipulation, not a real price move.", track: "pvm" as const },
+      { text: "Oracle Price Feeds", desc: "Compare on-chain pool price with external oracle (Chainlink/DIA). Large deviation = pool is manipulated or stale.", track: "pvm" as const },
+      { text: "Dynamic Risk Thresholds", desc: "Adaptive risk thresholds based on pool maturity. New pools get stricter limits; mature pools get more lenient scoring.", track: "pvm" as const },
     ],
   },
   {
     phase: "v3",
     label: "Future",
-    badgeColor: "border-polkadot-purple/30 bg-polkadot-purple/10 text-polkadot-purple",
+    badgeColor: "border-white/20 bg-white/[0.06] text-white/70",
     items: [
-      { text: "AI Trading Strategies", desc: "DCA, stop-loss, scheduled intents", icon: "🤖" },
-      { text: "Multi-Chain XCM Bridging", desc: "Bridge to any parachain, not just Relay", icon: "🔗" },
-      { text: "DEX Aggregation", desc: "Best price across multiple liquidity pools", icon: "📊" },
+      { text: "AI Trading Strategies", desc: "Describe your strategy in plain English: \"Buy 10 DOT daily if price is below 1 USDT\". AI executes it on schedule.", track: "evm" as const },
+      { text: "Liquidity Provision", desc: "Add liquidity to pools via natural language. AI calculates optimal amounts, warns about impermanent loss risk.", track: "evm" as const },
+      { text: "DEX Aggregation", desc: "Route swaps across multiple DEXes for best price. AI compares rates and splits orders automatically.", track: "evm" as const },
+      { text: "MEV Protection On-Chain", desc: "Detect frontrunning and sandwich attacks on-chain. Risk Engine flags suspicious transaction ordering.", track: "pvm" as const },
+      { text: "Cross-Chain Risk via XCM", desc: "Send risk scores to other parachains via XCM. Risk-as-a-service across Polkadot.", track: "pvm" as const },
+      { text: "Governance Risk Parameters", desc: "Move risk parameters into on-chain governance. Community votes to adjust scoring without redeploying.", track: "pvm" as const },
     ],
   },
 ];
+
+/* ── Roadmap Item (click to expand) ────────────────────── */
+function RoadmapItem({ item }: { item: { text: string; desc: string; track: "evm" | "pvm" } }) {
+  const [open, setOpen] = useState(false);
+  const isEvm = item.track === "evm";
+  return (
+    <button
+      onClick={() => setOpen(!open)}
+      className={`w-full rounded-xl border px-4 py-3 text-left transition-all ${
+        isEvm
+          ? "border-[#E6007A]/20 bg-[#E6007A]/[0.04] hover:bg-[#E6007A]/[0.08]"
+          : "border-[#DEA584]/25 bg-[#DEA584]/[0.04] hover:bg-[#DEA584]/[0.08]"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className={`text-sm font-medium ${isEvm ? "text-[#E6007A]/85" : "text-[#DEA584]"}`}>
+          {item.text}
+        </span>
+        <span className={`text-[10px] transition-transform ${open ? "rotate-180" : ""} ${isEvm ? "text-[#E6007A]/40" : "text-[#DEA584]/40"}`}>
+          ▼
+        </span>
+      </div>
+      {open && (
+        <p className="mt-2 text-xs leading-relaxed text-white/50">{item.desc}</p>
+      )}
+    </button>
+  );
+}
 
 /* ── Animated Demo ─────────────────────────────────────── */
 const DEMO_TEXT = "Swap 100 DOT for USDT";
@@ -562,14 +610,24 @@ export default function Home() {
 
           {/* ── Section 4: Roadmap ────────────────────────── */}
           <section className="px-6 py-24">
-            <div className="mx-auto max-w-4xl">
+            <div className="mx-auto max-w-5xl">
               <h3 className="animate-on-scroll mb-4 text-center text-sm font-semibold uppercase tracking-widest text-polkadot-purple">
                 Roadmap
               </h3>
-              <p className="animate-on-scroll mb-16 text-center text-3xl font-bold text-white sm:text-4xl">
+              <p className="animate-on-scroll mb-4 text-center text-3xl font-bold text-white sm:text-4xl">
                 What&apos;s next for IntentDOT
               </p>
-              <div className="grid gap-8 sm:grid-cols-2">
+              <div className="animate-on-scroll mb-12 flex items-center justify-center gap-5 text-xs font-semibold">
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-2 w-2 rounded-sm bg-[#E6007A]" />
+                  <span className="text-[#E6007A]">EVM</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-2 w-2 rounded-sm bg-[#DEA584]" />
+                  <span className="text-[#DEA584]">PVM</span>
+                </span>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-3">
                 {roadmapPhases.map((phase, pi) => (
                   <div key={phase.phase} className="animate-on-scroll" style={{ transitionDelay: `${(pi + 1) * 100}ms` }}>
                     <div className="mb-4 flex items-center gap-3">
@@ -578,20 +636,9 @@ export default function Home() {
                       </span>
                       <span className="text-sm text-white/30">{phase.label}</span>
                     </div>
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-2">
                       {phase.items.map((item) => (
-                        <div
-                          key={item.text}
-                          className="group rounded-xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 transition-colors hover:bg-white/[0.04]"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg">{item.icon}</span>
-                            <div>
-                              <p className="text-sm font-medium text-white/80">{item.text}</p>
-                              <p className="text-xs text-white/30">{item.desc}</p>
-                            </div>
-                          </div>
-                        </div>
+                        <RoadmapItem key={item.text} item={item} />
                       ))}
                     </div>
                   </div>

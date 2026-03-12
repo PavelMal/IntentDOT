@@ -19,7 +19,7 @@ export const xcmPrecompileAbi = [
   {
     name: "execute",
     type: "function",
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     inputs: [
       { name: "message", type: "bytes" },
       {
