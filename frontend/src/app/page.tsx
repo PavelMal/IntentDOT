@@ -112,7 +112,7 @@ const roadmapPhases = [
   },
   {
     phase: "v2",
-    label: "Next",
+    label: "April 2026",
     badgeColor: "border-white/20 bg-white/[0.06] text-white/70",
     items: [
       { text: "EIP-7702 Smooth Mode", desc: "Account abstraction via EIP-7702. No more MetaMask popups — transactions feel like Web2.", track: "evm" as const },
@@ -125,7 +125,7 @@ const roadmapPhases = [
   },
   {
     phase: "v3",
-    label: "Future",
+    label: "June 2026",
     badgeColor: "border-white/20 bg-white/[0.06] text-white/70",
     items: [
       { text: "AI Trading Strategies", desc: "Describe your strategy in plain English: \"Buy 10 DOT daily if price is below 1 USDT\". AI executes it on schedule.", track: "evm" as const },
