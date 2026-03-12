@@ -48,6 +48,11 @@ function FeatureIcon({ name }: { name: string }) {
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
       </svg>
     ),
+    lock: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+      </svg>
+    ),
     bridge: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
@@ -75,11 +80,11 @@ function FeatureIcon({ name }: { name: string }) {
 /* ── Feature Data ───────────────────────────────────────── */
 const features = [
   { icon: "chat", title: "Natural Language DeFi", desc: "Type what you want in plain English. Swap tokens, send transfers, create tokens, or bridge cross-chain — all from one chat.", borderColor: "border-polkadot-pink/30", bgColor: "bg-polkadot-pink/10", textColor: "text-polkadot-pink" },
-  { icon: "shield", title: "AI Risk Guardian", desc: "On-chain Rust smart contract scores every swap for risk. Slippage, liquidity, volatility, and pool drain — evaluated before you confirm.", borderColor: "border-polkadot-green/30", bgColor: "bg-polkadot-green/10", textColor: "text-polkadot-green" },
+  { icon: "shield", title: "AI Risk Guardian", desc: "Off-chain AI pre-check: scores slippage, liquidity, and pool drain risk before you confirm. GREEN / YELLOW / RED rating.", borderColor: "border-polkadot-green/30", bgColor: "bg-polkadot-green/10", textColor: "text-polkadot-green" },
+  { icon: "lock", title: "Rust Risk Engine", desc: "On-chain Rust smart contract on PolkaVM. Validates every swap by price impact, MA20 deviation, and volatility. RED = automatic revert.", borderColor: "border-[#DEA584]/30", bgColor: "bg-[#DEA584]/10", textColor: "text-[#DEA584]" },
   { icon: "bridge", title: "XCM Cross-Chain Bridge", desc: "Bridge PAS tokens from Polkadot Hub to Relay Chain via XCM. One command, fully on-chain teleport.", borderColor: "border-polkadot-cyan/30", bgColor: "bg-polkadot-cyan/10", textColor: "text-polkadot-cyan" },
   { icon: "sparkle", title: "Token Factory", desc: "Create your own ERC-20 token in seconds. Just describe the name, symbol, and supply — auto-whitelisted for trading.", borderColor: "border-polkadot-purple/30", bgColor: "bg-polkadot-purple/10", textColor: "text-polkadot-purple" },
   { icon: "chart", title: "Live Portfolio & Markets", desc: "Real-time token balances, pool reserves, live prices, and mini price charts with sparklines — all in the header.", borderColor: "border-yellow-500/30", bgColor: "bg-yellow-500/10", textColor: "text-yellow-400" },
-  { icon: "history", title: "On-Chain History", desc: "Full transaction history pulled from blockchain events. Swaps, transfers, token creations, and bridges — with Blockscout links.", borderColor: "border-polkadot-pink/30", bgColor: "bg-polkadot-pink/10", textColor: "text-polkadot-pink" },
 ];
 
 /* ── Steps Data ─────────────────────────────────────────── */
