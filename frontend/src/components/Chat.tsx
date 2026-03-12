@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAccount, usePublicClient } from "wagmi";
-import { parseUnits, formatUnits } from "viem";
+import { parseUnits, parseEther, formatUnits, formatEther } from "viem";
 import type { ChatMessage, IntentParseResult, TransactionPreview, TransferPreview, TokenCreatePreview, BridgePreview, SwapReceipt, TransferReceipt, TokenCreateReceipt, BridgeReceipt, ParsedIntent } from "@/lib/types";
 import { TransactionPreviewCard } from "./TransactionPreview";
 import { SwapReceiptCard } from "./SwapReceipt";
@@ -77,8 +77,25 @@ export function Chat() {
 
   // Check on-chain balance for a token
   const checkBalance = useCallback(async (tokenSymbol: string, amount: number): Promise<{ have: string; need: number } | undefined> => {
+    if (!publicClient || !address) return undefined;
+
+    // Native PAS balance check
+    if (tokenSymbol === "PAS") {
+      try {
+        const balance = await publicClient.getBalance({ address });
+        const amountNeeded = parseEther(amount.toString());
+        if (balance < amountNeeded) {
+          return {
+            have: parseFloat(formatEther(balance)).toFixed(4),
+            need: amount,
+          };
+        }
+      } catch { /* ignore */ }
+      return undefined;
+    }
+
     const tokenInfo = TOKEN_MAP[tokenSymbol];
-    if (!tokenInfo || !publicClient || !address) return undefined;
+    if (!tokenInfo) return undefined;
     try {
       const balance = await publicClient.readContract({
         address: tokenInfo.address,

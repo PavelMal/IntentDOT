@@ -103,12 +103,13 @@ export function buildTransferPreview(
   if (!intent.amount || intent.amount <= 0) return null;
   if (!intent.recipient) return null;
 
-  const token = TOKEN_MAP[intent.token_from];
-  if (!token) return null;
+  const isNative = intent.token_from === "PAS";
+  const token = isNative ? null : TOKEN_MAP[intent.token_from];
+  if (!isNative && !token) return null;
 
   return {
     intent: { action: "transfer", token_from: intent.token_from, token_to: "", amount: intent.amount, recipient: intent.recipient },
-    tokenAddress: token.address,
+    tokenAddress: isNative ? "0x0000000000000000000000000000000000000000" : token!.address,
   };
 }
 

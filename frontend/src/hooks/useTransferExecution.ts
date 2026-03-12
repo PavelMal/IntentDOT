@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useAccount, usePublicClient } from "wagmi";
 import { getWalletClient } from "wagmi/actions";
-import { parseUnits, formatUnits, isAddress, type Hash, type Address } from "viem";
+import { parseEther, parseUnits, formatEther, formatUnits, isAddress, type Hash, type Address } from "viem";
 import { config, polkadotHubTestnet } from "@/lib/wagmi";
 import { CONTRACTS, TOKEN_MAP } from "@/lib/contracts";
 import { mockERC20Abi, intentExecutorAbi } from "@/lib/abis";
@@ -44,30 +44,66 @@ export function useTransferExecution() {
         return r;
       }
 
-      const token = TOKEN_MAP[tokenSymbol];
-      if (!token) {
-        const r: TransferResult = { status: "error", error: `Unknown token: ${tokenSymbol}` };
-        setResult(r);
-        return r;
-      }
-
       if (!isAddress(recipient)) {
         const r: TransferResult = { status: "error", error: "Invalid recipient address." };
         setResult(r);
         return r;
       }
 
-      const executor = CONTRACTS.intentExecutor;
-      if (executor === "0x0000000000000000000000000000000000000000") {
-        const r: TransferResult = { status: "error", error: "IntentExecutor contract not configured." };
-        setResult(r);
-        return r;
-      }
-
-      const amountWei = parseUnits(amount.toString(), token.decimals);
-
       try {
         const walletClient = await getWalletClient(config);
+
+        // Native PAS transfer (no contract needed)
+        if (tokenSymbol === "PAS") {
+          const amountWei = parseEther(amount.toString());
+
+          const balance = await publicClient.getBalance({ address });
+          if (balance < amountWei) {
+            const r: TransferResult = {
+              status: "error",
+              error: `Insufficient PAS balance. You have ${parseFloat(formatEther(balance)).toFixed(4)} but need ${amount}.`,
+            };
+            setResult(r);
+            return r;
+          }
+
+          setResult({ status: "executing" });
+
+          const executeTxHash = await walletClient.sendTransaction({
+            chain: polkadotHubTestnet,
+            to: recipient as Address,
+            value: amountWei,
+          });
+
+          const receipt = await publicClient.waitForTransactionReceipt({ hash: executeTxHash });
+
+          if (receipt.status !== "success") {
+            const r: TransferResult = { status: "error", executeTxHash, error: "Transaction reverted on-chain." };
+            setResult(r);
+            return r;
+          }
+
+          const r: TransferResult = { status: "success", executeTxHash };
+          setResult(r);
+          return r;
+        }
+
+        // ERC-20 transfer via IntentExecutor
+        const token = TOKEN_MAP[tokenSymbol];
+        if (!token) {
+          const r: TransferResult = { status: "error", error: `Unknown token: ${tokenSymbol}` };
+          setResult(r);
+          return r;
+        }
+
+        const executor = CONTRACTS.intentExecutor;
+        if (executor === "0x0000000000000000000000000000000000000000") {
+          const r: TransferResult = { status: "error", error: "IntentExecutor contract not configured." };
+          setResult(r);
+          return r;
+        }
+
+        const amountWei = parseUnits(amount.toString(), token.decimals);
 
         // Check balance
         const balance = await publicClient.readContract({

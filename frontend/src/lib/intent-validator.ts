@@ -1,6 +1,6 @@
 import type { IntentParseResult } from "./types";
 
-const VALID_TOKENS = ["DOT", "USDT", "USDC"];
+const VALID_TOKENS = ["DOT", "USDT", "USDC", "PAS"];
 const VALID_BRIDGE_DESTINATIONS = ["relay"];
 const ETH_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
 
@@ -48,6 +48,13 @@ function validateSwap(raw: IntentParseResult): IntentParseResult {
     return {
       success: false,
       clarification: `Supported tokens: ${VALID_TOKENS.join(", ")}. Try: 'Swap 10 DOT to USDT'`,
+    };
+  }
+
+  if (token_from === "PAS" || token_to === "PAS") {
+    return {
+      success: false,
+      clarification: "PAS is the native token and cannot be swapped on DEX. You can transfer PAS or bridge it. Try: 'Send 5 PAS to 0x...' or 'Bridge 20 PAS to relay chain'",
     };
   }
 
