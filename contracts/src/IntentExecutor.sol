@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "./MockDEX.sol";
 import "./IRiskEngine.sol";
 
@@ -102,12 +103,12 @@ contract IntentExecutor is Ownable, ReentrancyGuard, Pausable {
         require(riskLevel < RISK_RED, "IntentExecutor: risk too high");
     }
 
-    function executeSwap(
+    function _doSwap(
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
         uint256 minAmountOut
-    ) external nonReentrant whenNotPaused onlyWhitelisted(tokenIn) onlyWhitelisted(tokenOut) returns (uint256 amountOut) {
+    ) internal returns (uint256 amountOut) {
         require(amountIn > 0, "IntentExecutor: zero amount");
         require(tokenIn != tokenOut, "IntentExecutor: same token");
 
@@ -129,6 +130,32 @@ contract IntentExecutor is Ownable, ReentrancyGuard, Pausable {
         IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
 
         emit IntentExecuted(msg.sender, "swap", tokenIn, tokenOut, amountIn, amountOut);
+    }
+
+    /// @notice Standard swap — requires prior ERC20 approval
+    function executeSwap(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 minAmountOut
+    ) external nonReentrant whenNotPaused onlyWhitelisted(tokenIn) onlyWhitelisted(tokenOut) returns (uint256 amountOut) {
+        return _doSwap(tokenIn, tokenOut, amountIn, minAmountOut);
+    }
+
+    /// @notice Gasless-approval swap via EIP-2612 permit — one signature, one tx
+    /// @dev User signs an off-chain permit (no gas), then this function calls permit() + swap in one tx
+    function executeSwapWithPermit(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 minAmountOut,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external nonReentrant whenNotPaused onlyWhitelisted(tokenIn) onlyWhitelisted(tokenOut) returns (uint256 amountOut) {
+        IERC20Permit(tokenIn).permit(msg.sender, address(this), amountIn, deadline, v, r, s);
+        return _doSwap(tokenIn, tokenOut, amountIn, minAmountOut);
     }
 
     /// @notice Transfer tokens to a recipient. Whitelist enforced.

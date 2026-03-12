@@ -253,6 +253,103 @@ contract IntentDOTTest is Test {
         executor.pause();
     }
 
+    // === ERC20Permit / SwapWithPermit Tests ===
+
+    uint256 constant ALICE_PK = 0xA11CE;
+    address alicePermit = vm.addr(ALICE_PK);
+
+    function _getPermitDigest(
+        MockERC20 token,
+        address owner_,
+        address spender,
+        uint256 value,
+        uint256 nonce,
+        uint256 deadline
+    ) internal view returns (bytes32) {
+        bytes32 PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+        bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, owner_, spender, value, nonce, deadline));
+        return keccak256(abi.encodePacked("\x19\x01", token.DOMAIN_SEPARATOR(), structHash));
+    }
+
+    function test_swapWithPermit_happy_path() public {
+        // Setup: give alicePermit some DOT
+        dot.mint(alicePermit, 1_000 ether);
+
+        uint256 deadline = block.timestamp + 1 hours;
+        uint256 amountIn = 10 ether;
+
+        // Sign permit off-chain
+        bytes32 digest = _getPermitDigest(dot, alicePermit, address(executor), amountIn, 0, deadline);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ALICE_PK, digest);
+
+        // Execute swap with permit — no prior approve needed
+        vm.prank(alicePermit);
+        uint256 amountOut = executor.executeSwapWithPermit(
+            address(dot), address(usdt), amountIn, 0, deadline, v, r, s
+        );
+
+        assertGt(amountOut, 0, "Should receive USDT");
+        assertEq(dot.balanceOf(alicePermit), 990 ether, "Should spend 10 DOT");
+        assertEq(usdt.balanceOf(alicePermit), amountOut, "Should receive exact USDT");
+    }
+
+    function test_swapWithPermit_expired_deadline() public {
+        dot.mint(alicePermit, 1_000 ether);
+
+        uint256 deadline = block.timestamp - 1; // expired
+        uint256 amountIn = 10 ether;
+
+        bytes32 digest = _getPermitDigest(dot, alicePermit, address(executor), amountIn, 0, deadline);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ALICE_PK, digest);
+
+        vm.prank(alicePermit);
+        vm.expectRevert();
+        executor.executeSwapWithPermit(
+            address(dot), address(usdt), amountIn, 0, deadline, v, r, s
+        );
+    }
+
+    function test_swapWithPermit_wrong_signer() public {
+        dot.mint(alicePermit, 1_000 ether);
+
+        uint256 deadline = block.timestamp + 1 hours;
+        uint256 amountIn = 10 ether;
+
+        // Sign with a DIFFERENT key
+        uint256 WRONG_PK = 0xBAD;
+        bytes32 digest = _getPermitDigest(dot, alicePermit, address(executor), amountIn, 0, deadline);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(WRONG_PK, digest);
+
+        vm.prank(alicePermit);
+        vm.expectRevert();
+        executor.executeSwapWithPermit(
+            address(dot), address(usdt), amountIn, 0, deadline, v, r, s
+        );
+    }
+
+    function test_swapWithPermit_replay_reverts() public {
+        dot.mint(alicePermit, 1_000 ether);
+
+        uint256 deadline = block.timestamp + 1 hours;
+        uint256 amountIn = 10 ether;
+
+        bytes32 digest = _getPermitDigest(dot, alicePermit, address(executor), amountIn, 0, deadline);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ALICE_PK, digest);
+
+        // First call succeeds
+        vm.prank(alicePermit);
+        executor.executeSwapWithPermit(
+            address(dot), address(usdt), amountIn, 0, deadline, v, r, s
+        );
+
+        // Replay with same signature — nonce consumed, should revert
+        vm.prank(alicePermit);
+        vm.expectRevert();
+        executor.executeSwapWithPermit(
+            address(dot), address(usdt), amountIn, 0, deadline, v, r, s
+        );
+    }
+
     // === Factory Tests ===
 
     function test_factory_can_whitelist() public {
