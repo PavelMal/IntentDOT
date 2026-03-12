@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
 /// @title IRiskEngine — Interface for PVM Rust Risk Engine
 /// @dev Called by IntentExecutor before swaps to enforce on-chain risk limits.
