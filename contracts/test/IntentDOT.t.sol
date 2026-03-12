@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/MockERC20.sol";
@@ -57,7 +57,10 @@ contract IntentDOTTest is Test {
         address broke = makeAddr("broke");
         vm.startPrank(broke);
         dot.approve(address(executor), 10 ether);
-        vm.expectRevert("ERC20: insufficient balance");
+        vm.expectRevert(abi.encodeWithSelector(
+            bytes4(keccak256("ERC20InsufficientBalance(address,uint256,uint256)")),
+            broke, 0, 10 ether
+        ));
         executor.executeSwap(address(dot), address(usdt), 10 ether, 0);
         vm.stopPrank();
     }
@@ -206,6 +209,50 @@ contract IntentDOTTest is Test {
         vm.stopPrank();
     }
 
+    // === Pausable Tests ===
+
+    function test_pause_blocks_swap() public {
+        executor.pause();
+
+        vm.startPrank(alice);
+        dot.approve(address(executor), 10 ether);
+        vm.expectRevert(abi.encodeWithSelector(bytes4(keccak256("EnforcedPause()"))));
+        executor.executeSwap(address(dot), address(usdt), 10 ether, 0);
+        vm.stopPrank();
+    }
+
+    function test_pause_blocks_transfer() public {
+        executor.pause();
+        address bob = makeAddr("bob");
+
+        vm.startPrank(alice);
+        dot.approve(address(executor), 50 ether);
+        vm.expectRevert(abi.encodeWithSelector(bytes4(keccak256("EnforcedPause()"))));
+        executor.executeTransfer(address(dot), bob, 50 ether);
+        vm.stopPrank();
+    }
+
+    function test_unpause_resumes_swap() public {
+        executor.pause();
+        executor.unpause();
+
+        vm.startPrank(alice);
+        dot.approve(address(executor), 10 ether);
+        uint256 amountOut = executor.executeSwap(address(dot), address(usdt), 10 ether, 0);
+        vm.stopPrank();
+
+        assertGt(amountOut, 0, "Swap should work after unpause");
+    }
+
+    function test_non_owner_cannot_pause() public {
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(
+            bytes4(keccak256("OwnableUnauthorizedAccount(address)")),
+            alice
+        ));
+        executor.pause();
+    }
+
     // === Factory Tests ===
 
     function test_factory_can_whitelist() public {
@@ -221,7 +268,10 @@ contract IntentDOTTest is Test {
 
     function test_non_owner_cannot_set_factory() public {
         vm.prank(alice);
-        vm.expectRevert("IntentExecutor: not owner");
+        vm.expectRevert(abi.encodeWithSelector(
+            bytes4(keccak256("OwnableUnauthorizedAccount(address)")),
+            alice
+        ));
         executor.setFactory(alice);
     }
 }

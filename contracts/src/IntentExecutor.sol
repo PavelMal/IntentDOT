@@ -1,18 +1,21 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./MockDEX.sol";
-import "./MockERC20.sol";
 import "./IRiskEngine.sol";
 
 /// @title IntentExecutor — On-chain entry point for AI-parsed DeFi intents
-/// @dev Routes structured intents to MockDEX. Reentrancy-protected. Token whitelist enforced.
+/// @dev Routes structured intents to MockDEX. Uses OZ ReentrancyGuard, Ownable, Pausable, SafeERC20.
 ///      Optionally calls a PVM Rust Risk Engine before swaps — RED risk = revert.
-contract IntentExecutor {
+contract IntentExecutor is Ownable, ReentrancyGuard, Pausable {
+    using SafeERC20 for IERC20;
     MockDEX public immutable dex;
-    address public owner;
     address public factory;
-    bool private locked;
 
     /// @notice PVM Rust Risk Engine address (0 = disabled)
     IRiskEngine public riskEngine;
@@ -43,31 +46,20 @@ contract IntentExecutor {
 
     event RiskEngineUpdated(address indexed oldEngine, address indexed newEngine);
 
-    modifier noReentrant() {
-        require(!locked, "IntentExecutor: reentrant call");
-        locked = true;
-        _;
-        locked = false;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "IntentExecutor: not owner");
-        _;
-    }
-
     modifier onlyWhitelisted(address token) {
         require(whitelistedTokens[token], "IntentExecutor: token not whitelisted");
         _;
     }
 
-    constructor(address _dex) {
+    constructor(address _dex)
+        Ownable(msg.sender)
+    {
         dex = MockDEX(_dex);
-        owner = msg.sender;
     }
 
     /// @notice Whitelist or de-whitelist a token. Only owner or factory.
     function whitelistToken(address token, bool status) external {
-        require(msg.sender == owner || msg.sender == factory, "IntentExecutor: not authorized");
+        require(msg.sender == owner() || msg.sender == factory, "IntentExecutor: not authorized");
         whitelistedTokens[token] = status;
         emit TokenWhitelisted(token, status);
     }
@@ -82,6 +74,16 @@ contract IntentExecutor {
         address old = address(riskEngine);
         riskEngine = IRiskEngine(_riskEngine);
         emit RiskEngineUpdated(old, _riskEngine);
+    }
+
+    /// @notice Pause all swap and transfer operations (emergency stop)
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @notice Unpause operations
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     function _getReserves(address tokenIn, address tokenOut) internal view returns (uint256 reserveIn, uint256 reserveOut) {
@@ -105,7 +107,7 @@ contract IntentExecutor {
         address tokenOut,
         uint256 amountIn,
         uint256 minAmountOut
-    ) external noReentrant onlyWhitelisted(tokenIn) onlyWhitelisted(tokenOut) returns (uint256 amountOut) {
+    ) external nonReentrant whenNotPaused onlyWhitelisted(tokenIn) onlyWhitelisted(tokenOut) returns (uint256 amountOut) {
         require(amountIn > 0, "IntentExecutor: zero amount");
         require(tokenIn != tokenOut, "IntentExecutor: same token");
 
@@ -115,16 +117,16 @@ contract IntentExecutor {
         }
 
         // Transfer tokenIn from user to this contract
-        MockERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
 
         // Approve DEX to spend tokenIn
-        MockERC20(tokenIn).approve(address(dex), amountIn);
+        IERC20(tokenIn).forceApprove(address(dex), amountIn);
 
         // Execute swap via DEX
         amountOut = dex.swap(tokenIn, tokenOut, amountIn, minAmountOut);
 
         // Transfer tokenOut to user
-        MockERC20(tokenOut).transfer(msg.sender, amountOut);
+        IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
 
         emit IntentExecuted(msg.sender, "swap", tokenIn, tokenOut, amountIn, amountOut);
     }
@@ -134,12 +136,12 @@ contract IntentExecutor {
         address token,
         address recipient,
         uint256 amount
-    ) external noReentrant onlyWhitelisted(token) returns (bool) {
+    ) external nonReentrant whenNotPaused onlyWhitelisted(token) returns (bool) {
         require(amount > 0, "IntentExecutor: zero amount");
         require(recipient != address(0), "IntentExecutor: zero address");
         require(recipient != msg.sender, "IntentExecutor: self transfer");
 
-        MockERC20(token).transferFrom(msg.sender, recipient, amount);
+        IERC20(token).safeTransferFrom(msg.sender, recipient, amount);
 
         emit IntentExecuted(msg.sender, "transfer", token, recipient, amount, amount);
         return true;
