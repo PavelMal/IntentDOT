@@ -3,14 +3,22 @@ pragma solidity ^0.8.19;
 
 import "./MockDEX.sol";
 import "./MockERC20.sol";
+import "./IRiskEngine.sol";
 
 /// @title IntentExecutor — On-chain entry point for AI-parsed DeFi intents
 /// @dev Routes structured intents to MockDEX. Reentrancy-protected. Token whitelist enforced.
+///      Optionally calls a PVM Rust Risk Engine before swaps — RED risk = revert.
 contract IntentExecutor {
     MockDEX public immutable dex;
     address public owner;
     address public factory;
     bool private locked;
+
+    /// @notice PVM Rust Risk Engine address (0 = disabled)
+    IRiskEngine public riskEngine;
+
+    /// @notice Risk level that causes revert (default: 2 = RED)
+    uint8 public constant RISK_RED = 2;
 
     mapping(address => bool) public whitelistedTokens;
 
@@ -24,6 +32,16 @@ contract IntentExecutor {
     );
 
     event TokenWhitelisted(address indexed token, bool status);
+
+    event RiskChecked(
+        address indexed user,
+        uint8 riskLevel,
+        uint256 score,
+        uint256 priceImpact,
+        uint256 volatility
+    );
+
+    event RiskEngineUpdated(address indexed oldEngine, address indexed newEngine);
 
     modifier noReentrant() {
         require(!locked, "IntentExecutor: reentrant call");
@@ -59,6 +77,29 @@ contract IntentExecutor {
         factory = _factory;
     }
 
+    /// @notice Set or disable the PVM Risk Engine. Pass address(0) to disable.
+    function setRiskEngine(address _riskEngine) external onlyOwner {
+        address old = address(riskEngine);
+        riskEngine = IRiskEngine(_riskEngine);
+        emit RiskEngineUpdated(old, _riskEngine);
+    }
+
+    function _getReserves(address tokenIn, address tokenOut) internal view returns (uint256 reserveIn, uint256 reserveOut) {
+        (, , uint256 r0, uint256 r1) = dex.getPool(tokenIn, tokenOut);
+        (address t0, ) = tokenIn < tokenOut ? (tokenIn, tokenOut) : (tokenOut, tokenIn);
+        return tokenIn == t0 ? (r0, r1) : (r1, r0);
+    }
+
+    function _checkRisk(address tokenIn, address tokenOut, uint256 amountIn) internal {
+        (uint256 reserveIn, uint256 reserveOut) = _getReserves(tokenIn, tokenOut);
+
+        (uint8 riskLevel, uint256 score, uint256 priceImpact, uint256 volatility) =
+            riskEngine.evaluate(amountIn, reserveIn, reserveOut, tokenIn, tokenOut);
+
+        emit RiskChecked(msg.sender, riskLevel, score, priceImpact, volatility);
+        require(riskLevel < RISK_RED, "IntentExecutor: risk too high");
+    }
+
     function executeSwap(
         address tokenIn,
         address tokenOut,
@@ -67,6 +108,11 @@ contract IntentExecutor {
     ) external noReentrant onlyWhitelisted(tokenIn) onlyWhitelisted(tokenOut) returns (uint256 amountOut) {
         require(amountIn > 0, "IntentExecutor: zero amount");
         require(tokenIn != tokenOut, "IntentExecutor: same token");
+
+        // On-chain risk check via PVM Rust Risk Engine
+        if (address(riskEngine) != address(0)) {
+            _checkRisk(tokenIn, tokenOut, amountIn);
+        }
 
         // Transfer tokenIn from user to this contract
         MockERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);

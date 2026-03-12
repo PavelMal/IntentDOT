@@ -46,6 +46,7 @@ export function TransactionPreviewCard({
   const config = riskConfig[risk.level];
   const [dismissed, setDismissed] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(QUOTE_TTL_SECONDS);
+  const [showRiskInfo, setShowRiskInfo] = useState(false);
   const isExpired = secondsLeft <= 0;
 
   useEffect(() => {
@@ -168,14 +169,88 @@ export function TransactionPreviewCard({
       )}
 
       {/* Risk badge */}
-      <div className={`rounded-xl border px-4 py-3 text-center text-sm font-semibold ${config.bg} ${config.glow}`}>
-        <span>{config.icon} {config.label}</span>
+      <div className={`rounded-xl border px-4 py-3 text-sm font-semibold ${config.bg} ${config.glow}`}>
+        <div className="flex items-center justify-between">
+          <span>{config.icon} {config.label}</span>
+          <div className="relative">
+            <button
+              onClick={() => setShowRiskInfo(!showRiskInfo)}
+              className="flex items-center gap-1 text-[10px] font-medium text-white/50 hover:text-white/80 transition-colors"
+            >
+              <span className="uppercase tracking-wider">How is this calculated?</span>
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+              </svg>
+            </button>
+
+            {showRiskInfo && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowRiskInfo(false)} />
+                <div className="absolute right-0 bottom-8 z-50 w-72 rounded-xl border border-white/10 bg-[#1a1a2e] p-4 shadow-2xl text-left font-normal">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold text-white/80">AI Risk Guardian</p>
+                    <button onClick={() => setShowRiskInfo(false)} className="text-white/30 hover:text-white/60">
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-white/50 mb-3">
+                    Before you confirm, the AI evaluates your swap off-chain using real pool data. It checks three factors:
+                  </p>
+                  <div className="space-y-2 text-[11px]">
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5 text-polkadot-cyan/60">1.</span>
+                      <p className="text-white/50">
+                        <span className="text-white/70 font-medium">Slippage</span> — difference between expected and actual output amount
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5 text-polkadot-cyan/60">2.</span>
+                      <p className="text-white/50">
+                        <span className="text-white/70 font-medium">Price Impact</span> — how much your trade moves the pool price
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5 text-polkadot-cyan/60">3.</span>
+                      <p className="text-white/50">
+                        <span className="text-white/70 font-medium">Pool Drain</span> — what % of pool liquidity your swap uses
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-white/5 space-y-1.5 text-[10px]">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                      <span className="text-white/40">GREEN — Safe to swap</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
+                      <span className="text-white/40">YELLOW — Elevated risk, swap allowed</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                      <span className="text-white/40">RED — Blocked (slippage {">"}10% or pool drain {">"}30%)</span>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-[10px] text-white/30">
+                    This is a pre-swap check. After confirmation, a Rust smart contract on PolkaVM performs a second independent check on-chain.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
         {risk.reasons.length > 0 && (
           <ul className="mt-2 space-y-0.5 text-xs font-normal opacity-70">
             {risk.reasons.map((r, i) => (
               <li key={i}>{r}</li>
             ))}
           </ul>
+        )}
+        {risk.level === "RED" && (
+          <p className="mt-2 text-xs font-normal text-white/50 border-t border-white/5 pt-2">
+            Try a smaller amount to reduce price impact, or split into multiple swaps.
+          </p>
         )}
       </div>
 

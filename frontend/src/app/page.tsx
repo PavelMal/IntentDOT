@@ -48,9 +48,14 @@ function FeatureIcon({ name }: { name: string }) {
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
       </svg>
     ),
-    send: (
+    lock: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+      </svg>
+    ),
+    bridge: (
+      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
       </svg>
     ),
     sparkle: (
@@ -58,14 +63,14 @@ function FeatureIcon({ name }: { name: string }) {
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
       </svg>
     ),
-    lock: (
+    chart: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
       </svg>
     ),
-    cursor: (
+    history: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
       </svg>
     ),
   };
@@ -74,12 +79,12 @@ function FeatureIcon({ name }: { name: string }) {
 
 /* ── Feature Data ───────────────────────────────────────── */
 const features = [
-  { icon: "chat", title: "Natural Language DeFi", desc: "Type what you want in plain English. Our AI understands your intent and builds the perfect transaction.", borderColor: "border-polkadot-pink/30", bgColor: "bg-polkadot-pink/10", textColor: "text-polkadot-pink" },
-  { icon: "shield", title: "AI Risk Guardian", desc: "Every transaction is scored for risk. Slippage, liquidity depth, and pool drain are evaluated before you confirm.", borderColor: "border-polkadot-green/30", bgColor: "bg-polkadot-green/10", textColor: "text-polkadot-green" },
-  { icon: "send", title: "Token Transfers", desc: "Send tokens to any address with a simple command. Whitelist-protected for safety.", borderColor: "border-polkadot-cyan/30", bgColor: "bg-polkadot-cyan/10", textColor: "text-polkadot-cyan" },
-  { icon: "sparkle", title: "Token Factory", desc: "Create your own ERC-20 token in seconds. Just describe the name, symbol, and supply.", borderColor: "border-polkadot-purple/30", bgColor: "bg-polkadot-purple/10", textColor: "text-polkadot-purple" },
-  { icon: "lock", title: "On-Chain Whitelist", desc: "Only whitelisted tokens can be traded or transferred. Owner-controlled security layer.", borderColor: "border-yellow-500/30", bgColor: "bg-yellow-500/10", textColor: "text-yellow-400" },
-  { icon: "cursor", title: "One-Click Execution", desc: "Preview the full transaction, check the risk score, then execute with a single click.", borderColor: "border-polkadot-pink/30", bgColor: "bg-polkadot-pink/10", textColor: "text-polkadot-pink" },
+  { icon: "chat", title: "Natural Language DeFi", desc: "Type what you want in plain English. Swap tokens, send transfers, create tokens, or bridge cross-chain — all from one chat.", borderColor: "border-polkadot-pink/30", bgColor: "bg-polkadot-pink/10", textColor: "text-polkadot-pink" },
+  { icon: "shield", title: "AI Risk Guardian", desc: "Off-chain AI pre-check: scores slippage, liquidity, and pool drain risk before you confirm. GREEN / YELLOW / RED rating.", borderColor: "border-polkadot-green/30", bgColor: "bg-polkadot-green/10", textColor: "text-polkadot-green" },
+  { icon: "lock", title: "Rust Risk Engine", desc: "On-chain Rust smart contract on PolkaVM. Validates every swap by price impact, MA20 deviation, and volatility. RED = automatic revert.", borderColor: "border-[#DEA584]/30", bgColor: "bg-[#DEA584]/10", textColor: "text-[#DEA584]" },
+  { icon: "bridge", title: "XCM Cross-Chain Bridge", desc: "Bridge PAS tokens from Polkadot Hub to Relay Chain via XCM. One command, fully on-chain teleport.", borderColor: "border-polkadot-cyan/30", bgColor: "bg-polkadot-cyan/10", textColor: "text-polkadot-cyan" },
+  { icon: "sparkle", title: "Token Factory", desc: "Create your own ERC-20 token in seconds. Just describe the name, symbol, and supply — auto-whitelisted for trading.", borderColor: "border-polkadot-purple/30", bgColor: "bg-polkadot-purple/10", textColor: "text-polkadot-purple" },
+  { icon: "chart", title: "Live Portfolio & Markets", desc: "Real-time token balances, pool reserves, live prices, and mini price charts with sparklines — all in the header.", borderColor: "border-yellow-500/30", bgColor: "bg-yellow-500/10", textColor: "text-yellow-400" },
 ];
 
 /* ── Steps Data ─────────────────────────────────────────── */
@@ -92,26 +97,74 @@ const steps = [
 /* ── Roadmap Data ───────────────────────────────────────── */
 const roadmapPhases = [
   {
-    phase: "v2",
-    label: "Next Up",
+    phase: "v1",
+    label: "Now",
     badgeColor: "border-polkadot-green/30 bg-polkadot-green/10 text-polkadot-green",
     items: [
-      { text: "EIP-7702 Smooth Mode", desc: "Zero-popup trading — sign once, trade forever", icon: "⚡" },
-      { text: "NFT Buying & Selling", desc: "Trade NFTs with natural language intents", icon: "🖼" },
-      { text: "People Chain Identity", desc: "Send tokens by name instead of address", icon: "👤" },
+      { text: "Natural Language Swaps", desc: "Type \"swap 100 DOT to USDT\" in plain English. AI parses your intent and builds the transaction automatically.", track: "evm" as const },
+      { text: "AI Risk Guardian", desc: "AI scores every swap by price impact, volatility, and liquidity. GREEN = safe, YELLOW = warning, RED = blocked.", track: "evm" as const },
+      { text: "Token Transfers", desc: "Send tokens to any address with natural language. \"Send 50 USDT to 0x...\" — parsed and executed in one step.", track: "evm" as const },
+      { text: "Token Factory", desc: "Deploy your own ERC-20 token with a chat command. Auto-whitelisted on MockDEX for immediate trading.", track: "evm" as const },
+      { text: "Portfolio & History", desc: "Real-time token balances and full transaction log pulled from blockchain events.", track: "evm" as const },
+      { text: "Rust Risk Engine", desc: "Rust smart contract on PolkaVM that scores every swap by price impact, MA20 deviation, and volatility. RED = automatic revert.", track: "pvm" as const },
+      { text: "XCM Cross-Chain Bridge", desc: "Transfer tokens between Polkadot chains via XCM Precompile. Natural language command to XCM teleport in one click.", track: "pvm" as const },
+    ],
+  },
+  {
+    phase: "v2",
+    label: "Next",
+    badgeColor: "border-white/20 bg-white/[0.06] text-white/70",
+    items: [
+      { text: "EIP-7702 Smooth Mode", desc: "Account abstraction via EIP-7702. No more MetaMask popups — transactions feel like Web2.", track: "evm" as const },
+      { text: "NFT Trading", desc: "Buy, sell, and transfer NFTs through natural language. AI handles marketplace interaction.", track: "evm" as const },
+      { text: "People Chain Identity", desc: "Send tokens by name instead of address. \"Send 50 USDT to Alice\" — resolves People Chain identity to wallet address.", track: "evm" as const },
+      { text: "Multi-Pool Correlation", desc: "Analyze correlations between pools. If DOT/USDT drops but DOT/USDC doesn't — likely manipulation, not a real price move.", track: "pvm" as const },
+      { text: "Oracle Price Feeds", desc: "Compare on-chain pool price with external oracle (Chainlink/DIA). Large deviation = pool is manipulated or stale.", track: "pvm" as const },
+      { text: "Dynamic Risk Thresholds", desc: "Adaptive risk thresholds based on pool maturity. New pools get stricter limits; mature pools get more lenient scoring.", track: "pvm" as const },
     ],
   },
   {
     phase: "v3",
     label: "Future",
-    badgeColor: "border-polkadot-purple/30 bg-polkadot-purple/10 text-polkadot-purple",
+    badgeColor: "border-white/20 bg-white/[0.06] text-white/70",
     items: [
-      { text: "AI Trading Strategies", desc: "DCA, stop-loss, scheduled intents", icon: "🤖" },
-      { text: "XCM Cross-Chain Swaps", desc: "Trade across parachains seamlessly", icon: "🔗" },
-      { text: "DEX Aggregation", desc: "Best price across multiple liquidity pools", icon: "📊" },
+      { text: "AI Trading Strategies", desc: "Describe your strategy in plain English: \"Buy 10 DOT daily if price is below 1 USDT\". AI executes it on schedule.", track: "evm" as const },
+      { text: "Liquidity Provision", desc: "Add liquidity to pools via natural language. AI calculates optimal amounts, warns about impermanent loss risk.", track: "evm" as const },
+      { text: "DEX Aggregation", desc: "Route swaps across multiple DEXes for best price. AI compares rates and splits orders automatically.", track: "evm" as const },
+      { text: "MEV Protection On-Chain", desc: "Detect frontrunning and sandwich attacks on-chain. Risk Engine flags suspicious transaction ordering.", track: "pvm" as const },
+      { text: "Cross-Chain Risk via XCM", desc: "Send risk scores to other parachains via XCM. Risk-as-a-service across Polkadot.", track: "pvm" as const },
+      { text: "Governance Risk Parameters", desc: "Move risk parameters into on-chain governance. Community votes to adjust scoring without redeploying.", track: "pvm" as const },
     ],
   },
 ];
+
+/* ── Roadmap Item (click to expand) ────────────────────── */
+function RoadmapItem({ item }: { item: { text: string; desc: string; track: "evm" | "pvm" } }) {
+  const [open, setOpen] = useState(false);
+  const isEvm = item.track === "evm";
+  return (
+    <button
+      onClick={() => setOpen(!open)}
+      className={`w-full rounded-xl border px-4 py-3 text-left transition-all ${
+        isEvm
+          ? "border-[#E6007A]/20 bg-[#E6007A]/[0.04] hover:bg-[#E6007A]/[0.08]"
+          : "border-[#DEA584]/25 bg-[#DEA584]/[0.04] hover:bg-[#DEA584]/[0.08]"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className={`text-sm font-medium ${isEvm ? "text-[#E6007A]/85" : "text-[#DEA584]"}`}>
+          {item.text}
+        </span>
+        <span className={`text-[10px] transition-transform ${open ? "rotate-180" : ""} ${isEvm ? "text-[#E6007A]/40" : "text-[#DEA584]/40"}`}>
+          ▼
+        </span>
+      </div>
+      {open && (
+        <p className="mt-2 text-xs leading-relaxed text-white/50">{item.desc}</p>
+      )}
+    </button>
+  );
+}
 
 /* ── Animated Demo ─────────────────────────────────────── */
 const DEMO_TEXT = "Swap 100 DOT for USDT";
@@ -227,7 +280,7 @@ function AnimatedDemo() {
           <span className="text-[11px] font-medium text-white/40">Live Demo</span>
         </div>
         <span className="text-[10px] text-white/20">
-          {phase === "typing" ? "User typing..." : phase === "thinking" ? "AI analyzing..." : phase === "preview" ? "Preview ready" : phase === "confirming" ? "Executing..." : phase === "success" ? "✓ Complete" : ""}
+          {phase === "typing" ? "User typing..." : phase === "thinking" ? "AI analyzing..." : phase === "preview" ? "Preview ready" : phase === "confirming" ? "On-chain verification..." : phase === "success" ? "✓ On-chain verified" : ""}
         </span>
       </div>
 
@@ -283,35 +336,69 @@ function AnimatedDemo() {
       {/* Transaction Preview Card */}
       <div className={`mt-3 rounded-2xl border bg-white/[0.03] backdrop-blur-xl p-5 space-y-4 transition-opacity duration-500 ${(phase === "preview" || phase === "confirming" || phase === "success") ? "opacity-100 border-white/[0.08]" : "opacity-0 border-transparent pointer-events-none"}`}>
 
-        {/* Success overlay */}
+        {/* Success — matches real UI: SWAP SUCCESSFUL + on-chain risk badge */}
         {phase === "success" && (
-          <div className="flex flex-col items-center justify-center gap-3 animate-fade-in-up" style={{ minHeight: 380 }}>
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-polkadot-green bg-polkadot-green/10">
-              <svg className="h-7 w-7 text-polkadot-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
+          <div className="flex flex-col items-center gap-3 animate-fade-in-up" style={{ minHeight: 380 }}>
+            {/* Header */}
+            <div className="flex items-center gap-2.5 mb-1">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-polkadot-green/20">
+                <svg className="h-4.5 w-4.5 text-polkadot-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold uppercase tracking-widest text-polkadot-green/80">Swap Successful</p>
             </div>
-            <p className="text-lg font-semibold text-white">Swap Executed!</p>
-            <div className="rounded-lg bg-white/[0.04] border border-white/[0.06] px-4 py-2.5 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-white/30 mb-1">Transaction Hash</p>
-              <p className="text-xs font-mono text-polkadot-cyan">0x7a3f...b82d</p>
+
+            {/* Swap amounts box */}
+            <div className="w-full rounded-xl bg-white/[0.04] border border-white/[0.06] p-5">
+              <div className="text-center space-y-1">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/30">Sent</p>
+                <p className="text-xl font-bold text-white">100 <span className="text-base text-white/50">DOT</span></p>
+              </div>
+              <div className="my-2.5 flex justify-center">
+                <svg className="h-4 w-4 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/30">Received</p>
+                <p className="text-xl font-bold text-polkadot-green">685.42 <span className="text-base text-polkadot-green/50">USDT</span></p>
+              </div>
             </div>
-            <div className="flex items-center gap-4 mt-1 text-xs text-white/30">
-              <span>100 DOT → 685.42 USDT</span>
-              <span className="text-polkadot-green">✓ Confirmed</span>
+
+            {/* On-chain risk badge — GREEN */}
+            <div className="w-full rounded-xl border border-polkadot-green/20 bg-polkadot-green/[0.06] p-3.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="h-2.5 w-2.5 rounded-full bg-polkadot-green" />
+                  <span className="text-sm font-semibold text-polkadot-green">GREEN</span>
+                  <span className="text-xs text-white/30">Score 4/100</span>
+                </div>
+                <span className="text-[10px] uppercase tracking-widest text-white/25">On-chain verified</span>
+              </div>
+              <div className="flex items-center gap-4 text-[11px] text-white/30">
+                <span>Impact: 0.31%</span>
+                <span>Vol: 1.00%</span>
+              </div>
+            </div>
+
+            {/* TX hash */}
+            <div className="flex items-center justify-between w-full text-xs text-white/25 px-1">
+              <span>Transaction</span>
+              <span className="font-mono text-polkadot-cyan/70">0x7a3f...b82d</span>
             </div>
           </div>
         )}
 
-        {/* Confirming state */}
+        {/* Confirming state — on-chain verification */}
         {phase === "confirming" && (
           <div className="flex flex-col items-center justify-center gap-3 animate-fade-in-up" style={{ minHeight: 380 }}>
             <div className="relative h-12 w-12">
               <div className="absolute inset-0 rounded-full border-2 border-white/10" />
-              <div className="absolute inset-0 rounded-full border-2 border-t-polkadot-pink border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+              <div className="absolute inset-0 rounded-full border-2 border-t-polkadot-green border-r-transparent border-b-transparent border-l-transparent animate-spin" />
             </div>
-            <p className="text-sm font-medium text-white/80">Confirming on-chain...</p>
-            <p className="text-xs text-white/30">Waiting for block confirmation</p>
+            <p className="text-sm font-medium text-white/80">On-chain verification...</p>
+            <p className="text-xs text-white/30">Risk Engine (Rust/PolkaVM) validating swap</p>
           </div>
         )}
 
@@ -412,7 +499,7 @@ export default function Home() {
               href="/chat"
               className="rounded-xl border border-polkadot-pink/30 bg-polkadot-pink/10 px-4 py-2.5 text-sm font-semibold text-polkadot-pink hover:bg-polkadot-pink/20 transition-all"
             >
-              Launch App
+              Open Chat
             </Link>
           )}
           <ConnectWallet />
@@ -456,9 +543,12 @@ export default function Home() {
                 {isConnected ? (
                   <Link
                     href="/chat"
-                    className="inline-block rounded-xl bg-polkadot-pink px-8 py-3 text-base font-semibold text-white hover:bg-polkadot-pink/80 transition-all hover:shadow-lg hover:shadow-polkadot-pink/20 active:scale-[0.98]"
+                    className="inline-flex items-center gap-2 rounded-xl bg-polkadot-pink px-8 py-3 text-base font-semibold text-white hover:bg-polkadot-pink/80 transition-all hover:shadow-lg hover:shadow-polkadot-pink/20 active:scale-[0.98]"
                   >
-                    Launch App
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                    </svg>
+                    Start Chatting
                   </Link>
                 ) : (
                   <ConnectWallet />
@@ -525,14 +615,24 @@ export default function Home() {
 
           {/* ── Section 4: Roadmap ────────────────────────── */}
           <section className="px-6 py-24">
-            <div className="mx-auto max-w-4xl">
+            <div className="mx-auto max-w-5xl">
               <h3 className="animate-on-scroll mb-4 text-center text-sm font-semibold uppercase tracking-widest text-polkadot-purple">
                 Roadmap
               </h3>
-              <p className="animate-on-scroll mb-16 text-center text-3xl font-bold text-white sm:text-4xl">
+              <p className="animate-on-scroll mb-4 text-center text-3xl font-bold text-white sm:text-4xl">
                 What&apos;s next for IntentDOT
               </p>
-              <div className="grid gap-8 sm:grid-cols-2">
+              <div className="animate-on-scroll mb-12 flex items-center justify-center gap-5 text-xs font-semibold">
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-2 w-2 rounded-sm bg-[#E6007A]" />
+                  <span className="text-[#E6007A]">EVM</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block h-2 w-2 rounded-sm bg-[#DEA584]" />
+                  <span className="text-[#DEA584]">PVM</span>
+                </span>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-3">
                 {roadmapPhases.map((phase, pi) => (
                   <div key={phase.phase} className="animate-on-scroll" style={{ transitionDelay: `${(pi + 1) * 100}ms` }}>
                     <div className="mb-4 flex items-center gap-3">
@@ -541,20 +641,9 @@ export default function Home() {
                       </span>
                       <span className="text-sm text-white/30">{phase.label}</span>
                     </div>
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-2">
                       {phase.items.map((item) => (
-                        <div
-                          key={item.text}
-                          className="group rounded-xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 transition-colors hover:bg-white/[0.04]"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg">{item.icon}</span>
-                            <div>
-                              <p className="text-sm font-medium text-white/80">{item.text}</p>
-                              <p className="text-xs text-white/30">{item.desc}</p>
-                            </div>
-                          </div>
-                        </div>
+                        <RoadmapItem key={item.text} item={item} />
                       ))}
                     </div>
                   </div>
@@ -576,9 +665,12 @@ export default function Home() {
                 {isConnected ? (
                   <Link
                     href="/chat"
-                    className="inline-block rounded-xl bg-polkadot-pink px-8 py-3 text-base font-semibold text-white hover:bg-polkadot-pink/80 transition-all hover:shadow-lg hover:shadow-polkadot-pink/20 active:scale-[0.98]"
+                    className="inline-flex items-center gap-2 rounded-xl bg-polkadot-pink px-8 py-3 text-base font-semibold text-white hover:bg-polkadot-pink/80 transition-all hover:shadow-lg hover:shadow-polkadot-pink/20 active:scale-[0.98]"
                   >
-                    Launch App
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                    </svg>
+                    Start Chatting
                   </Link>
                 ) : (
                   <ConnectWallet />

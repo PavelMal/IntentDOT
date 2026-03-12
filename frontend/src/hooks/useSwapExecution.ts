@@ -7,6 +7,8 @@ import { parseUnits, formatUnits, type Hash } from "viem";
 import { config, polkadotHubTestnet } from "@/lib/wagmi";
 import { CONTRACTS, TOKEN_MAP } from "@/lib/contracts";
 import { mockERC20Abi, intentExecutorAbi } from "@/lib/abis";
+import { parseRiskCheckedEvent, type RawLog } from "@/lib/risk-display";
+import type { OnChainRisk } from "@/lib/types";
 
 export type SwapStatus =
   | "idle"
@@ -22,6 +24,7 @@ export interface SwapResult {
   executeTxHash?: Hash;
   amountOut?: string;
   error?: string;
+  onChainRisk?: OnChainRisk;
 }
 
 /**
@@ -128,20 +131,30 @@ export function useSwapExecution() {
         const receipt = await publicClient.waitForTransactionReceipt({ hash: executeTxHash });
 
         if (receipt.status !== "success") {
+          // Check if it was a risk revert
+          const isRiskRevert = receipt.logs.length === 0;
           const r: SwapResult = {
             status: "error",
             approveTxHash,
             executeTxHash,
-            error: "Transaction reverted on-chain. Possible slippage exceeded or insufficient liquidity.",
+            error: isRiskRevert
+              ? "Transaction blocked by on-chain Risk Engine (risk too high)."
+              : "Transaction reverted on-chain. Possible slippage exceeded or insufficient liquidity.",
           };
           setResult(r);
           return r;
         }
 
+        // Parse RiskChecked event from receipt logs
+        const onChainRisk: OnChainRisk | undefined = parseRiskCheckedEvent(
+          receipt.logs as unknown as RawLog[]
+        );
+
         const r: SwapResult = {
           status: "success",
           approveTxHash,
           executeTxHash,
+          onChainRisk,
         };
         setResult(r);
         return r;

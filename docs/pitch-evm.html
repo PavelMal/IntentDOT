@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IntentDOT — EVM Track Pitch</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a1a;
+    --surface: #12122a;
+    --pink: #E6007A;
+    --purple: #552BBF;
+    --cyan: #00B2FF;
+    --green: #00c853;
+    --yellow: #ffd600;
+    --red: #ff1744;
+    --text: #ffffff;
+    --muted: rgba(255,255,255,0.4);
+    --dim: rgba(255,255,255,0.15);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* Slide container */
+  .deck { position: relative; width: 100vw; height: 100vh; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+  .slide.active { opacity: 1; pointer-events: auto; }
+
+  /* Typography */
+  h1 { font-size: 4rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; }
+  h2 { font-size: 2.8rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 40px; }
+  h3 { font-size: 1.4rem; font-weight: 600; margin-bottom: 12px; }
+  p { font-size: 1.15rem; line-height: 1.7; color: var(--muted); }
+  .small { font-size: 0.95rem; }
+
+  .gradient-text {
+    background: linear-gradient(135deg, var(--pink), var(--purple), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .tag-pink { border: 1px solid rgba(230,0,122,0.3); background: rgba(230,0,122,0.1); color: var(--pink); }
+  .tag-green { border: 1px solid rgba(0,200,83,0.3); background: rgba(0,200,83,0.1); color: var(--green); }
+
+  /* Layout helpers */
+  .text-center { text-align: center; }
+  .max-w { max-width: 900px; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-24 { margin-bottom: 24px; }
+  .mb-40 { margin-bottom: 40px; }
+  .mb-48 { margin-bottom: 48px; }
+  .gap-24 { gap: 24px; }
+  .gap-16 { gap: 16px; }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; width: 100%; max-width: 1000px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; width: 100%; max-width: 1100px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 900px; }
+
+  /* Cards */
+  .card {
+    padding: 32px;
+    border-radius: 20px;
+    border: 1px solid var(--dim);
+    background: rgba(255,255,255,0.02);
+  }
+  .card-pink { border-color: rgba(230,0,122,0.2); }
+  .card-green { border-color: rgba(0,200,83,0.2); }
+  .card-purple { border-color: rgba(85,43,191,0.2); }
+  .card-cyan { border-color: rgba(0,178,255,0.2); }
+  .card-yellow { border-color: rgba(255,214,0,0.2); }
+
+  .icon-box {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+  }
+  .icon-pink { background: rgba(230,0,122,0.1); border: 1px solid rgba(230,0,122,0.2); }
+  .icon-green { background: rgba(0,200,83,0.1); border: 1px solid rgba(0,200,83,0.2); }
+  .icon-purple { background: rgba(85,43,191,0.1); border: 1px solid rgba(85,43,191,0.2); }
+  .icon-cyan { background: rgba(0,178,255,0.1); border: 1px solid rgba(0,178,255,0.2); }
+  .icon-yellow { background: rgba(255,214,0,0.1); border: 1px solid rgba(255,214,0,0.2); }
+  .icon-red { background: rgba(255,23,68,0.1); border: 1px solid rgba(255,23,68,0.2); }
+
+  /* Problem slide specifics */
+  .problem-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--dim);
+  }
+  .problem-item:last-child { border-bottom: none; }
+  .problem-num {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--red);
+    opacity: 0.4;
+    min-width: 50px;
+  }
+
+  /* Architecture */
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+  .arch-box {
+    padding: 14px 24px;
+    border-radius: 14px;
+    border: 1px solid var(--dim);
+    background: rgba(255,255,255,0.03);
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .arch-arrow { color: var(--muted); font-size: 1.2rem; }
+  .arch-box.highlight-pink { border-color: rgba(230,0,122,0.4); background: rgba(230,0,122,0.08); color: var(--pink); }
+  .arch-box.highlight-green { border-color: rgba(0,200,83,0.4); background: rgba(0,200,83,0.08); color: var(--green); }
+  .arch-box.highlight-purple { border-color: rgba(85,43,191,0.4); background: rgba(85,43,191,0.08); color: var(--purple); }
+  .arch-box.highlight-cyan { border-color: rgba(0,178,255,0.4); background: rgba(0,178,255,0.08); color: var(--cyan); }
+
+  /* Demo flow */
+  .demo-flow {
+    width: 100%;
+    max-width: 700px;
+    border-radius: 20px;
+    border: 1px solid var(--dim);
+    background: rgba(255,255,255,0.02);
+    padding: 32px;
+  }
+  .demo-step {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 0;
+  }
+  .demo-step + .demo-step { border-top: 1px solid rgba(255,255,255,0.06); }
+  .demo-badge {
+    min-width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .demo-text { flex: 1; }
+  .demo-text strong { color: var(--text); }
+  .demo-text span { color: var(--muted); font-size: 0.9rem; }
+
+  /* Roadmap */
+  .roadmap-phase {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 24px 0;
+  }
+  .phase-badge {
+    min-width: 56px;
+    padding: 6px 0;
+    text-align: center;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .phase-now { background: rgba(0,200,83,0.15); color: var(--green); border: 1px solid rgba(0,200,83,0.3); }
+  .phase-next { background: rgba(230,0,122,0.15); color: var(--pink); border: 1px solid rgba(230,0,122,0.3); }
+  .phase-future { background: rgba(85,43,191,0.15); color: var(--purple); border: 1px solid rgba(85,43,191,0.3); }
+  .phase-items { display: flex; flex-wrap: wrap; gap: 8px; }
+  .phase-item {
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--dim);
+    background: rgba(255,255,255,0.02);
+    font-size: 0.85rem;
+    color: var(--muted);
+    position: relative;
+  }
+  .phase-item[data-tip] {
+    cursor: help;
+    padding-right: 30px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .phase-item[data-tip]::after {
+    content: '?';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(230,0,122,0.12);
+    border: 1px solid rgba(230,0,122,0.3);
+    color: var(--pink);
+    font-size: 0.6rem;
+    font-weight: 700;
+  }
+  .phase-item[data-tip]:hover {
+    border-color: rgba(230,0,122,0.5);
+    background: rgba(230,0,122,0.08);
+  }
+  .phase-item[data-tip]:hover::before {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #1a1428;
+    border: 1px solid rgba(230,0,122,0.25);
+    color: var(--text);
+    font-size: 0.75rem;
+    line-height: 1.5;
+    white-space: normal;
+    width: 260px;
+    text-align: left;
+    z-index: 10;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  /* Navigation */
+  .nav {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    border-radius: 100px;
+    background: rgba(18,18,42,0.9);
+    border: 1px solid var(--dim);
+    backdrop-filter: blur(20px);
+    z-index: 100;
+  }
+  .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--dim);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .nav-dot.active { background: var(--pink); transform: scale(1.3); }
+  .nav-count { font-size: 0.7rem; color: var(--muted); margin-left: 8px; }
+
+  .nav-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--dim);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+  /* Decorative orbs */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    opacity: 0.15;
+  }
+
+  /* Risk badges inline */
+  .risk-green { color: var(--green); font-weight: 600; }
+  .risk-yellow { color: var(--yellow); font-weight: 600; }
+  .risk-red { color: var(--red); font-weight: 600; }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 48px;
+    justify-content: center;
+    margin-top: 40px;
+  }
+  .stat { text-align: center; }
+  .stat-num { font-size: 2.4rem; font-weight: 800; }
+  .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+  /* Team */
+  .team-info { text-align: center; margin-top: 32px; }
+
+  /* Solution animation — app mockup */
+  .sol-app {
+    width: 100%; max-width: 520px; margin: 0 auto;
+    border-radius: 20px; border: 1px solid var(--dim);
+    background: linear-gradient(180deg, #110d1a, #0a0710);
+    min-height: 460px; position: relative; overflow: hidden;
+  }
+  .sol-phase {
+    position: absolute; inset: 0; padding: 24px 28px;
+    opacity: 0; transition: opacity 0.45s ease;
+    display: flex; flex-direction: column;
+  }
+  .sol-phase.show { opacity: 1; }
+  .sol-loop-badge {
+    position: absolute; top: 12px; right: 16px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.65rem; color: var(--muted);
+  }
+  .sol-loop-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); animation: sol-pulse 2s infinite;
+  }
+  @keyframes sol-pulse { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
+
+  /* Typing phase */
+  .sol-input-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px; border-radius: 14px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  }
+  .sol-input-text { flex: 1; font-size: 0.95rem; color: var(--text); }
+  .sol-cursor { display: inline-block; width: 2px; height: 1.1em; background: var(--pink); vertical-align: text-bottom; animation: sol-blink 0.53s step-end infinite; }
+  @keyframes sol-blink { 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
+  .sol-send-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(230,0,122,0.3); border: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sol-phase-label { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: auto; }
+
+  /* Thinking phase */
+  .sol-dots { display: flex; gap: 8px; align-items: center; justify-content: center; }
+  .sol-dots span {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: rgba(230,0,122,0.6); animation: sol-bounce 1.2s infinite;
+  }
+  .sol-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .sol-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes sol-bounce { 0%,60%,100%{transform:translateY(0);opacity:0.3;} 30%{transform:translateY(-8px);opacity:1;} }
+
+  .sol-ai-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: rgba(230,0,122,0.1); border: 1px solid rgba(230,0,122,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; margin: 0 auto 16px;
+  }
+
+  /* Preview phase */
+  .sol-preview-label {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 2px;
+    color: rgba(255,255,255,0.3); margin-bottom: 10px;
+  }
+  .sol-amount-box {
+    padding: 14px; border-radius: 12px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 8px; text-align: center;
+  }
+  .sol-amount-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 1.5px; color: rgba(255,255,255,0.3); margin-bottom: 4px; }
+  .sol-amount-val { font-size: 1.4rem; font-weight: 700; }
+  .sol-amount-token { font-size: 0.9rem; font-weight: 700; opacity: 0.5; }
+  .sol-arrow-divider { text-align: center; color: rgba(255,255,255,0.15); font-size: 1rem; margin: -4px 0; position: relative; z-index: 1; }
+  .sol-detail-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 0.8rem; color: var(--muted); }
+  .sol-detail-row strong { color: var(--text); font-weight: 500; }
+  .sol-risk-bar {
+    margin-top: 6px; padding: 8px; border-radius: 10px;
+    background: rgba(0,200,83,0.07); border: 1px solid rgba(0,200,83,0.25);
+    text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--green);
+  }
+  .sol-btn-row { display: flex; gap: 10px; margin-top: 10px; }
+  .sol-btn-cancel {
+    flex: 1; padding: 10px; border-radius: 10px; text-align: center;
+    border: 1px solid rgba(255,255,255,0.1); background: transparent;
+    color: rgba(255,255,255,0.4); font-size: 0.85rem; font-weight: 500;
+  }
+  .sol-btn-confirm {
+    flex: 1; padding: 10px; border-radius: 10px; text-align: center;
+    background: var(--pink); border: none;
+    color: white; font-size: 0.85rem; font-weight: 600;
+  }
+
+  /* Confirming phase */
+  @keyframes sol-spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+  .sol-spinner {
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.06);
+    border-top: 3px solid var(--green);
+    animation: sol-spin 1s linear infinite;
+    margin: 0 auto 20px;
+  }
+
+  /* Success phase */
+  .sol-success-header {
+    display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 20px;
+  }
+  .sol-check-circle {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(86,243,154,0.1); border: 1.5px solid rgba(86,243,154,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+  }
+  .sol-success-title { font-size: 0.9rem; font-weight: 600; letter-spacing: 2px; color: rgba(86,243,154,0.8); }
+  .sol-risk-badge-big {
+    margin-top: 12px; padding: 14px 20px; border-radius: 14px;
+    background: rgba(86,243,154,0.05); border: 1px solid rgba(86,243,154,0.15);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sol-risk-left { display: flex; align-items: center; gap: 8px; }
+  .sol-risk-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); }
+  .sol-risk-label { font-size: 0.95rem; font-weight: 700; color: var(--green); }
+  .sol-risk-score { font-size: 0.85rem; color: var(--muted); }
+  .sol-risk-verified { font-size: 0.7rem; font-weight: 500; letter-spacing: 1px; color: rgba(255,255,255,0.25); }
+  .sol-risk-stats { display: flex; gap: 16px; margin-top: 8px; padding-left: 18px; }
+  .sol-risk-stats span { font-size: 0.75rem; color: var(--muted); }
+  .sol-tx-row { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; }
+  .sol-tx-label { color: rgba(255,255,255,0.25); }
+  .sol-tx-hash { color: rgba(0,178,255,0.7); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ==================== SLIDE 0: Title ==================== -->
+  <div class="slide active" data-slide="0">
+    <div class="orb" style="width:400px;height:400px;background:var(--pink);top:-100px;right:-100px;"></div>
+    <div class="orb" style="width:300px;height:300px;background:var(--purple);bottom:-50px;left:-50px;"></div>
+
+    <div class="text-center max-w">
+      <div class="tag tag-pink mb-40">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--pink);"></span>
+        Polkadot Solidity Hackathon 2026
+      </div>
+      <h1 class="mb-24">
+        Intent<span class="gradient-text">DOT</span>
+      </h1>
+      <p style="font-size:1.5rem;color:rgba(255,255,255,0.5);margin-bottom:48px;">
+        AI-powered DeFi Intent Solver on Polkadot
+      </p>
+      <p class="small" style="color:rgba(255,255,255,0.2);">
+        EVM Smart Contracts Track &middot; AI-powered Category
+      </p>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 1: Challenge ==================== -->
+  <div class="slide" data-slide="1">
+    <div class="orb" style="width:300px;height:300px;background:var(--red);top:10%;left:-80px;opacity:0.1;"></div>
+
+    <div style="width:100%;max-width:1100px;">
+      <div class="text-center">
+        <div class="tag tag-pink mb-24">Challenge</div>
+        <h2>Fragmented tools. Scattered features.<br/>No single app does it all.</h2>
+      </div>
+
+      <!-- Mock platform UIs row -->
+      <div style="display:flex;gap:16px;justify-content:center;margin-bottom:40px;flex-wrap:wrap;">
+
+        <!-- 1: DEX / Swap platform -->
+        <div style="width:200px;border-radius:16px;padding:16px;background:linear-gradient(135deg,#1b1b2f,#2d1f4e);border:1px solid rgba(255,255,255,0.08);opacity:0.7;transform:rotate(-2deg);font-size:0.65rem;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <span style="color:#ff007a;font-weight:700;font-size:0.7rem;">SwapHub</span>
+            <span style="background:rgba(255,0,122,0.15);padding:1px 6px;border-radius:4px;color:#ff007a;font-size:0.5rem;">DEX</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:8px;margin-bottom:6px;">
+            <div style="color:rgba(255,255,255,0.3);font-size:0.55rem;">You pay</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="color:white;font-size:0.85rem;font-weight:600;">0.0</span>
+              <span style="background:rgba(255,255,255,0.1);padding:2px 8px;border-radius:8px;color:white;font-size:0.6rem;">DOT &#9660;</span>
+            </div>
+          </div>
+          <div style="text-align:center;color:rgba(255,255,255,0.15);margin:4px 0;">&#8595;</div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:8px;margin-bottom:6px;">
+            <div style="color:rgba(255,255,255,0.3);font-size:0.55rem;">You receive</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="color:white;font-size:0.85rem;font-weight:600;">0.0</span>
+              <span style="background:rgba(255,255,255,0.1);padding:2px 8px;border-radius:8px;color:white;font-size:0.6rem;">USDT &#9660;</span>
+            </div>
+          </div>
+          <div style="color:rgba(255,255,255,0.15);font-size:0.45rem;margin-bottom:6px;text-align:center;">Slippage? Fee? Price impact?</div>
+          <div style="background:rgba(255,0,122,0.3);text-align:center;padding:6px;border-radius:10px;color:white;font-size:0.65rem;font-weight:600;">Connect Wallet</div>
+        </div>
+
+        <!-- 2: Wallet / Transfer platform -->
+        <div style="width:200px;border-radius:16px;padding:16px;background:linear-gradient(135deg,#0e1a2e,#0a2540);border:1px solid rgba(0,178,255,0.15);opacity:0.7;transform:rotate(1deg);font-size:0.65rem;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <span style="color:#00b2ff;font-weight:700;font-size:0.7rem;">SendX</span>
+            <span style="background:rgba(0,178,255,0.15);padding:1px 6px;border-radius:4px;color:#00b2ff;font-size:0.5rem;">Wallet</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;margin-bottom:6px;">
+            <div style="color:rgba(255,255,255,0.2);font-size:0.5rem;">Recipient Address</div>
+            <div style="color:rgba(255,255,255,0.25);font-size:0.55rem;margin-top:4px;font-family:monospace;word-break:break-all;">0x742d...4fE6</div>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:6px;">
+            <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:8px;padding:6px;">
+              <div style="color:rgba(255,255,255,0.2);font-size:0.5rem;">Amount</div>
+              <div style="color:white;font-size:0.75rem;font-weight:600;">50</div>
+            </div>
+            <div style="width:60px;background:rgba(255,255,255,0.05);border-radius:8px;padding:6px;text-align:center;">
+              <div style="color:rgba(255,255,255,0.2);font-size:0.5rem;">Token</div>
+              <div style="color:white;font-size:0.75rem;font-weight:600;">USDT</div>
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);border-radius:6px;padding:5px;margin-bottom:6px;">
+            <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,0.25);font-size:0.45rem;"><span>Network</span><span>Polkadot Hub</span></div>
+            <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,0.25);font-size:0.45rem;"><span>Gas</span><span>~0.002 PAS</span></div>
+          </div>
+          <div style="background:rgba(0,178,255,0.3);text-align:center;padding:6px;border-radius:10px;color:white;font-size:0.65rem;font-weight:600;">Send Tokens</div>
+        </div>
+
+        <!-- 3: Token Launchpad -->
+        <div style="width:200px;border-radius:16px;padding:16px;background:linear-gradient(135deg,#1a1028,#2a1540);border:1px solid rgba(140,80,255,0.15);opacity:0.7;transform:rotate(-1.5deg);font-size:0.65rem;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <span style="color:#bf6bff;font-weight:700;font-size:0.7rem;">MintPad</span>
+            <span style="background:rgba(191,107,255,0.15);padding:1px 6px;border-radius:4px;color:#bf6bff;font-size:0.5rem;">Launch</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:6px;margin-bottom:5px;">
+            <div style="color:rgba(255,255,255,0.2);font-size:0.5rem;">Token Name</div>
+            <input style="width:100%;background:transparent;border:none;color:white;font-size:0.7rem;outline:none;margin-top:2px;" value="My Token" disabled>
+          </div>
+          <div style="display:flex;gap:5px;margin-bottom:5px;">
+            <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:8px;padding:6px;">
+              <div style="color:rgba(255,255,255,0.2);font-size:0.5rem;">Symbol</div>
+              <div style="color:white;font-size:0.7rem;">MTK</div>
+            </div>
+            <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:8px;padding:6px;">
+              <div style="color:rgba(255,255,255,0.2);font-size:0.5rem;">Decimals</div>
+              <div style="color:white;font-size:0.7rem;">18</div>
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:6px;margin-bottom:5px;">
+            <div style="color:rgba(255,255,255,0.2);font-size:0.5rem;">Total Supply</div>
+            <div style="color:white;font-size:0.7rem;">1,000,000</div>
+          </div>
+          <div style="display:flex;gap:3px;margin-bottom:5px;">
+            <span style="background:rgba(255,255,255,0.05);padding:2px 5px;border-radius:3px;color:rgba(255,255,255,0.25);font-size:0.4rem;">Mintable</span>
+            <span style="background:rgba(255,255,255,0.05);padding:2px 5px;border-radius:3px;color:rgba(255,255,255,0.25);font-size:0.4rem;">Burnable</span>
+            <span style="background:rgba(255,255,255,0.05);padding:2px 5px;border-radius:3px;color:rgba(255,255,255,0.25);font-size:0.4rem;">Pausable</span>
+          </div>
+          <div style="background:rgba(191,107,255,0.3);text-align:center;padding:6px;border-radius:10px;color:white;font-size:0.65rem;font-weight:600;">Deploy Token</div>
+        </div>
+
+        <!-- 4: Portfolio tracker -->
+        <div style="width:200px;border-radius:16px;padding:16px;background:linear-gradient(135deg,#0f1c0f,#1a2e1a);border:1px solid rgba(0,200,83,0.15);opacity:0.7;transform:rotate(2deg);font-size:0.65rem;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span style="color:#00c853;font-weight:700;font-size:0.7rem;">PortTrack</span>
+            <span style="background:rgba(0,200,83,0.15);padding:1px 6px;border-radius:4px;color:#00c853;font-size:0.5rem;">Portfolio</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:6px;margin-bottom:5px;">
+            <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,0.25);font-size:0.5rem;"><span>DOT</span><span style="color:white;">1,245.00</span></div>
+            <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,0.25);font-size:0.5rem;"><span>USDT</span><span style="color:white;">500.00</span></div>
+            <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,0.25);font-size:0.5rem;"><span>USDC</span><span style="color:white;">320.50</span></div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03);border-radius:6px;padding:5px;margin-bottom:6px;">
+            <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,0.25);font-size:0.45rem;"><span>Total Value</span><span style="color:white;">$9,253.42</span></div>
+            <div style="display:flex;justify-content:space-between;color:rgba(255,255,255,0.25);font-size:0.45rem;"><span>24h Change</span><span style="color:#00c853;">+2.4%</span></div>
+          </div>
+          <div style="color:rgba(255,255,255,0.15);font-size:0.45rem;margin-bottom:6px;text-align:center;">Read-only. No swaps. No transfers.</div>
+          <div style="background:rgba(0,200,83,0.3);text-align:center;padding:6px;border-radius:10px;color:white;font-size:0.65rem;font-weight:600;">View Only</div>
+        </div>
+      </div>
+
+      <!-- Confused user quote -->
+      <div style="text-align:center;margin-bottom:32px;">
+        <p style="font-size:1.5rem;font-style:italic;color:rgba(255,255,255,0.25);">
+          "This one can swap but can't send. That one sends but can't create tokens. None of them warn me about risks."
+        </p>
+        <p style="font-size:0.85rem;color:var(--red);margin-top:8px;font-weight:600;">
+          &mdash; Every new DeFi user, every time
+        </p>
+      </div>
+
+      <!-- Pain points -->
+      <div style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;border:1px solid rgba(255,23,68,0.2);background:rgba(255,23,68,0.05);">
+          <span style="font-size:1.2rem;">&#x1F635;</span>
+          <span class="small" style="color:rgba(255,255,255,0.5);"><strong style="color:var(--red);">Each app does one thing</strong> — none does it all</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;border:1px solid rgba(255,214,0,0.2);background:rgba(255,214,0,0.05);">
+          <span style="font-size:1.2rem;">&#x26A0;&#xFE0F;</span>
+          <span class="small" style="color:rgba(255,255,255,0.5);"><strong style="color:var(--yellow);">Every UI is different</strong> — new learning curve</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;border:1px solid rgba(255,23,68,0.2);background:rgba(255,23,68,0.05);">
+          <span style="font-size:1.2rem;">&#x1F6AB;</span>
+          <span class="small" style="color:rgba(255,255,255,0.5);"><strong style="color:var(--red);">Zero risk protection</strong> across all of them</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 2: Solution ==================== -->
+  <div class="slide" data-slide="2" id="slide-solution">
+    <div class="orb" style="width:350px;height:350px;background:var(--green);bottom:-80px;right:-80px;opacity:0.12;"></div>
+
+    <div class="text-center max-w">
+      <div class="tag tag-green mb-24">Solution</div>
+      <h2>One chat. Any intent.<br/>Get it done safely.</h2>
+
+      <div class="sol-app" id="sol-app">
+        <div class="sol-loop-badge"><span class="sol-loop-dot"></span> Live Demo</div>
+
+        <!-- Phase 1: Typing -->
+        <div class="sol-phase" id="ph-typing">
+          <div class="sol-input-bar">
+            <div class="sol-input-text"><span id="sol-typed"></span><span class="sol-cursor" id="sol-cursor"></span></div>
+            <div class="sol-send-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="#E6007A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+          <div class="sol-phase-label" style="margin-top:auto;">User typing...</div>
+        </div>
+
+        <!-- Phase 2: Thinking -->
+        <div class="sol-phase" id="ph-thinking" style="justify-content:center;align-items:center;">
+          <div class="sol-ai-icon">&#x2728;</div>
+          <div class="sol-dots"><span></span><span></span><span></span></div>
+          <div class="sol-phase-label" style="margin-top:20px;">AI analyzing risk...</div>
+        </div>
+
+        <!-- Phase 3: Preview -->
+        <div class="sol-phase" id="ph-preview">
+          <div class="sol-preview-label">TRANSACTION PREVIEW</div>
+          <div class="sol-amount-box">
+            <div class="sol-amount-label">YOU SEND</div>
+            <div><span class="sol-amount-val" style="color:var(--text);">100 </span><span class="sol-amount-token" style="color:var(--muted);">DOT</span></div>
+          </div>
+          <div class="sol-arrow-divider">&#x25BC;</div>
+          <div class="sol-amount-box">
+            <div class="sol-amount-label">YOU RECEIVE</div>
+            <div><span class="sol-amount-val" style="color:var(--green);">685.42 </span><span class="sol-amount-token" style="color:rgba(86,243,154,0.5);">USDT</span></div>
+          </div>
+          <div class="sol-detail-row"><span>Slippage</span><strong>0.31%</strong></div>
+          <div class="sol-detail-row"><span>Price Impact</span><strong>0.01%</strong></div>
+          <div class="sol-risk-bar">&#x2705; LOW RISK</div>
+          <div class="sol-btn-row">
+            <div class="sol-btn-cancel">Cancel</div>
+            <div class="sol-btn-confirm" id="sol-confirm">Confirm Swap</div>
+          </div>
+        </div>
+
+        <!-- Phase 4: Confirming -->
+        <div class="sol-phase" id="ph-confirming" style="justify-content:center;align-items:center;">
+          <div class="sol-spinner"></div>
+          <div style="font-size:1rem;font-weight:500;color:rgba(255,255,255,0.8);margin-bottom:8px;">On-chain verification...</div>
+          <div style="font-size:0.85rem;color:var(--muted);">AI Risk Guardian validating swap</div>
+        </div>
+
+        <!-- Phase 5: Success -->
+        <div class="sol-phase" id="ph-success">
+          <div class="sol-success-header">
+            <div class="sol-check-circle">&#x2714;</div>
+            <div class="sol-success-title">SWAP SUCCESSFUL</div>
+          </div>
+          <div class="sol-amount-box" style="padding:16px;">
+            <div class="sol-amount-label">SENT</div>
+            <div><span class="sol-amount-val" style="color:var(--text);font-size:1.3rem;">100 </span><span class="sol-amount-token" style="color:var(--muted);font-size:0.9rem;">DOT</span></div>
+            <div style="color:rgba(255,255,255,0.15);margin:4px 0;">&#x25BC;</div>
+            <div class="sol-amount-label">RECEIVED</div>
+            <div><span class="sol-amount-val" style="color:var(--green);font-size:1.3rem;">685.42 </span><span class="sol-amount-token" style="color:rgba(86,243,154,0.5);font-size:0.9rem;">USDT</span></div>
+          </div>
+          <div class="sol-risk-badge-big">
+            <div class="sol-risk-left">
+              <div class="sol-risk-dot"></div>
+              <div class="sol-risk-label">GREEN</div>
+              <div class="sol-risk-score">Score 4/100</div>
+            </div>
+            <div class="sol-risk-verified">ON-CHAIN VERIFIED</div>
+          </div>
+          <div class="sol-risk-stats">
+            <span>Impact: 0.31%</span>
+            <span>Vol: 1.00%</span>
+          </div>
+          <div class="sol-tx-row">
+            <span class="sol-tx-label">Transaction</span>
+            <span class="sol-tx-hash">0xc5f7e324...b85d60</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 3: How It Works ==================== -->
+  <div class="slide" data-slide="3">
+    <div class="orb" style="width:300px;height:300px;background:var(--purple);top:-80px;left:-80px;opacity:0.1;"></div>
+
+    <div style="width:100%;max-width:1000px;">
+      <div class="text-center">
+        <div class="tag tag-pink mb-24">How It Works</div>
+        <h2>From words to on-chain in 3 steps</h2>
+      </div>
+
+      <!-- Big visual flow: 3 steps -->
+      <div style="display:flex;gap:0;align-items:stretch;justify-content:center;margin-bottom:48px;">
+
+        <!-- Step 1: You say -->
+        <div style="flex:1;max-width:300px;text-align:center;padding:32px 24px;">
+          <div style="width:72px;height:72px;border-radius:20px;background:rgba(230,0,122,0.1);border:2px solid rgba(230,0,122,0.25);display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 20px;">&#x1F4AC;</div>
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--pink);margin-bottom:8px;">Step 1</div>
+          <h3 style="font-size:1.3rem;margin-bottom:10px;">You say it</h3>
+          <div style="background:rgba(230,0,122,0.06);border:1px solid rgba(230,0,122,0.15);border-radius:12px;padding:12px 16px;font-size:0.85rem;color:var(--text);font-style:italic;">
+            "Swap 100 DOT to USDT"
+          </div>
+          <p class="small" style="margin-top:10px;">Also: send tokens, create tokens, check balances</p>
+        </div>
+
+        <!-- Arrow -->
+        <div style="display:flex;align-items:center;padding:0 8px;margin-top:20px;">
+          <div style="font-size:1.8rem;color:var(--dim);">&#10132;</div>
+        </div>
+
+        <!-- Step 2: AI understands -->
+        <div style="flex:1;max-width:300px;text-align:center;padding:32px 24px;">
+          <div style="width:72px;height:72px;border-radius:20px;background:rgba(85,43,191,0.1);border:2px solid rgba(85,43,191,0.25);display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 20px;">&#x1F9E0;</div>
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--purple);margin-bottom:8px;">Step 2</div>
+          <h3 style="font-size:1.3rem;margin-bottom:10px;">AI understands</h3>
+          <div style="background:rgba(85,43,191,0.06);border:1px solid rgba(85,43,191,0.15);border-radius:12px;padding:12px 16px;font-size:0.8rem;text-align:left;">
+            <div style="display:flex;justify-content:space-between;color:var(--muted);padding:2px 0;"><span>Intent</span><strong style="color:var(--text);">Swap</strong></div>
+            <div style="display:flex;justify-content:space-between;color:var(--muted);padding:2px 0;"><span>Amount</span><strong style="color:var(--text);">100 DOT</strong></div>
+            <div style="display:flex;justify-content:space-between;color:var(--muted);padding:2px 0;"><span>Risk</span><span class="sol-risk-badge" style="font-size:0.65rem;">&#x2705; LOW</span></div>
+          </div>
+          <p class="small" style="margin-top:10px;">Parses intent, checks risk, builds TX</p>
+        </div>
+
+        <!-- Arrow -->
+        <div style="display:flex;align-items:center;padding:0 8px;margin-top:20px;">
+          <div style="font-size:1.8rem;color:var(--dim);">&#10132;</div>
+        </div>
+
+        <!-- Step 3: Done on-chain -->
+        <div style="flex:1;max-width:300px;text-align:center;padding:32px 24px;">
+          <div style="width:72px;height:72px;border-radius:20px;background:rgba(0,200,83,0.1);border:2px solid rgba(0,200,83,0.25);display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 20px;">&#x2705;</div>
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--green);margin-bottom:8px;">Step 3</div>
+          <h3 style="font-size:1.3rem;margin-bottom:10px;">Done on-chain</h3>
+          <div style="background:rgba(0,200,83,0.06);border:1px solid rgba(0,200,83,0.15);border-radius:12px;padding:12px 16px;font-size:0.8rem;">
+            <div style="color:var(--green);font-weight:600;margin-bottom:4px;">&#x2705; Swap executed</div>
+            <div style="color:var(--muted);font-size:0.75rem;">100 DOT &rarr; 685.42 USDT</div>
+            <div style="color:var(--cyan);font-size:0.7rem;margin-top:6px;">TX: 0xa3f8...7c21 &#x2197;</div>
+          </div>
+          <p class="small" style="margin-top:10px;">One confirm, executed via smart contracts</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 4: Architecture ==================== -->
+  <div class="slide" data-slide="4">
+    <div class="orb" style="width:350px;height:350px;background:var(--cyan);top:-100px;right:-100px;opacity:0.08;"></div>
+
+    <div style="width:100%;max-width:1100px;">
+      <div class="text-center">
+        <div class="tag tag-pink mb-24">Architecture</div>
+        <h2>Full EVM Stack on Polkadot Hub</h2>
+      </div>
+
+      <!-- Main architecture diagram -->
+      <div style="display:flex;flex-direction:column;gap:0;align-items:center;margin-bottom:32px;">
+
+        <!-- Layer 1: Frontend -->
+        <div style="width:100%;max-width:900px;display:flex;gap:12px;justify-content:center;margin-bottom:4px;">
+          <div style="flex:1;padding:18px 16px;border-radius:14px;background:rgba(230,0,122,0.06);border:1px solid rgba(230,0,122,0.2);text-align:center;">
+            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--pink);margin-bottom:6px;">Frontend <span style="opacity:0.6;font-weight:500;">&mdash; 52 tests</span></div>
+            <div style="font-size:0.95rem;font-weight:600;color:var(--text);margin-bottom:4px;">Next.js + wagmi</div>
+            <div style="font-size:0.7rem;color:var(--muted);">Chat UI &middot; Portfolio &middot; History &middot; Token Factory</div>
+          </div>
+        </div>
+
+        <!-- Arrow down -->
+        <div style="color:var(--dim);font-size:1.2rem;padding:2px 0;">&#x25BC;</div>
+
+        <!-- Layer 2: AI -->
+        <div style="width:100%;max-width:900px;display:flex;gap:12px;justify-content:center;margin-bottom:4px;">
+          <div style="flex:1;padding:18px 16px;border-radius:14px;background:rgba(85,43,191,0.06);border:1px solid rgba(85,43,191,0.2);text-align:center;">
+            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--purple);margin-bottom:6px;">AI Layer <span style="opacity:0.6;font-weight:500;">&mdash; 100 tests</span></div>
+            <div style="font-size:0.95rem;font-weight:600;color:var(--text);margin-bottom:4px;">Claude AI &mdash; Intent Parser + Risk Guardian</div>
+            <div style="font-size:0.7rem;color:var(--muted);">Natural language &rarr; structured intent &rarr; risk score (GREEN / YELLOW / RED)</div>
+          </div>
+        </div>
+
+        <!-- Arrow down -->
+        <div style="color:var(--dim);font-size:1.2rem;padding:2px 0;">&#x25BC;</div>
+
+        <!-- Layer 3: Smart Contracts -->
+        <div style="width:100%;max-width:900px;margin-bottom:2px;">
+          <div style="text-align:center;margin-bottom:6px;">
+            <span style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--green);">Smart Contracts <span style="opacity:0.6;font-weight:500;">&mdash; 38 tests</span></span>
+          </div>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <div style="flex:1;min-width:160px;padding:16px;border-radius:14px;background:rgba(0,200,83,0.06);border:1px solid rgba(0,200,83,0.2);text-align:center;">
+              <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--green);margin-bottom:6px;">Router</div>
+              <div style="font-size:0.9rem;font-weight:600;color:var(--text);">IntentExecutor.sol</div>
+              <div style="font-size:0.65rem;color:var(--muted);margin-top:4px;">Routes swaps, transfers, token creates</div>
+            </div>
+            <div style="flex:1;min-width:160px;padding:16px;border-radius:14px;background:rgba(0,178,255,0.06);border:1px solid rgba(0,178,255,0.2);text-align:center;">
+              <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--cyan);margin-bottom:6px;">Liquidity</div>
+              <div style="font-size:0.9rem;font-weight:600;color:var(--text);">MockDEX.sol</div>
+              <div style="font-size:0.65rem;color:var(--muted);margin-top:4px;">AMM pools, reserves, swap logic</div>
+            </div>
+            <div style="flex:1;min-width:160px;padding:16px;border-radius:14px;background:rgba(255,214,0,0.06);border:1px solid rgba(255,214,0,0.2);text-align:center;">
+              <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--yellow);margin-bottom:6px;">Factory</div>
+              <div style="font-size:0.9rem;font-weight:600;color:var(--text);">TokenFactory.sol</div>
+              <div style="font-size:0.65rem;color:var(--muted);margin-top:4px;">Deploy ERC-20 + auto-whitelist</div>
+            </div>
+          </div>
+          <div style="text-align:center;margin-top:8px;display:flex;gap:10px;justify-content:center;font-size:0.75rem;font-weight:600;">
+            <span style="color:var(--pink);">DOT</span>
+            <span style="color:var(--dim);">&middot;</span>
+            <span style="color:var(--green);">USDT</span>
+            <span style="color:var(--dim);">&middot;</span>
+            <span style="color:var(--cyan);">USDC</span>
+            <span style="color:var(--dim);">&middot;</span>
+            <span style="color:var(--yellow);">User Tokens</span>
+          </div>
+        </div>
+
+        <!-- Arrow down -->
+        <div style="color:var(--dim);font-size:1.2rem;padding:6px 0;">&#x25BC;</div>
+
+        <!-- Layer 5: Blockchain -->
+        <div style="width:100%;max-width:900px;">
+          <div style="padding:18px;border-radius:14px;background:linear-gradient(135deg,rgba(230,0,122,0.04),rgba(85,43,191,0.04));border:1px solid rgba(230,0,122,0.15);text-align:center;">
+            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--pink);margin-bottom:6px;">Blockchain <span style="opacity:0.6;font-weight:500;">&mdash; 33 e2e tests</span></div>
+            <div style="font-size:1rem;font-weight:700;color:var(--text);">Polkadot Hub TestNet</div>
+            <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">EVM &middot; ChainId 420420417</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 5: Killer Features ==================== -->
+  <div class="slide" data-slide="5">
+    <div class="text-center" style="width:100%;">
+      <div class="tag tag-pink mb-24">Killer Features</div>
+      <h2>What makes IntentDOT special</h2>
+
+      <div class="grid-3" style="margin:0 auto;">
+        <div class="card card-pink">
+          <div class="icon-box icon-pink">&#x1F4AC;</div>
+          <h3>Natural Language DeFi</h3>
+          <p class="small">4 intent types: swap, transfer, create token, check balance &mdash; all from one chat interface.</p>
+        </div>
+        <div class="card card-green">
+          <div class="icon-box icon-green">&#x1F6E1;</div>
+          <h3>AI Risk Guardian</h3>
+          <p class="small">AI pre-scores every trade before you confirm. <span class="risk-green">GREEN</span> / <span class="risk-yellow">YELLOW</span> / <span class="risk-red">RED</span> risk levels protect you from bad trades.</p>
+        </div>
+        <div class="card card-cyan">
+          <div class="icon-box icon-cyan">&#x1F4B8;</div>
+          <h3>Token Transfers</h3>
+          <p class="small">"Send 50 USDT to 0x..." &mdash; transfer any ERC-20 token to any address, all from natural language.</p>
+        </div>
+        <div class="card card-purple">
+          <div class="icon-box icon-purple">&#x2728;</div>
+          <h3>Token Factory</h3>
+          <p class="small">Create ERC-20 tokens from chat. Auto-whitelisted for trading on the built-in DEX.</p>
+        </div>
+        <div class="card card-yellow">
+          <div class="icon-box icon-yellow">&#x1F4CA;</div>
+          <h3>Live Portfolio &amp; Markets</h3>
+          <p class="small">Real-time balances, pool reserves, sparkline price charts, 12s auto-refresh from chain data.</p>
+        </div>
+        <div class="card card-pink">
+          <div class="icon-box icon-pink">&#x1F4DC;</div>
+          <h3>On-Chain Transaction History</h3>
+          <p class="small">Full history from blockchain events + Blockscout API. Swaps, transfers, token creates &mdash; all on-chain.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 6: Risk Guardian Deep Dive ==================== -->
+  <div class="slide" data-slide="6">
+    <div class="orb" style="width:300px;height:300px;background:var(--green);top:-60px;right:-60px;opacity:0.1;"></div>
+
+    <div class="text-center" style="width:100%;">
+      <div class="tag tag-green mb-24">AI Risk Guardian</div>
+      <h2>AI-powered risk protection</h2>
+
+      <!-- Single AI layer -->
+      <div style="max-width:700px;margin:0 auto 32px;">
+        <div class="card" style="border-color:rgba(85,43,191,0.3);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <div class="icon-box icon-purple" style="margin-bottom:0;">&#x1F9E0;</div>
+            <div style="text-align:left;">
+              <h3 style="margin-bottom:0;font-size:1.2rem;">AI Risk Analysis</h3>
+            </div>
+          </div>
+          <p class="small">Claude AI evaluates slippage, liquidity depth, price impact, and pool drain ratio <strong style="color:var(--text);">before</strong> you confirm. Every trade gets a risk score with clear <span class="risk-green">GREEN</span> / <span class="risk-yellow">YELLOW</span> / <span class="risk-red">RED</span> verdict. High-risk trades are blocked automatically.</p>
+        </div>
+      </div>
+
+      <!-- GREEN / YELLOW / RED cards -->
+      <div class="grid-3" style="margin:0 auto;">
+        <div class="card" style="border-color:rgba(0,200,83,0.3);text-align:center;">
+          <div style="font-size:3rem;margin-bottom:12px;">&#x2705;</div>
+          <h3 class="risk-green">LOW RISK</h3>
+          <p class="small">Slippage &lt; 3%<br/>Good liquidity<br/>Safe to trade</p>
+          <div style="margin-top:16px;padding:12px;border-radius:12px;background:rgba(0,200,83,0.08);border:1px solid rgba(0,200,83,0.2);">
+            <p class="small" style="color:var(--green);">Confirm Swap</p>
+          </div>
+        </div>
+        <div class="card" style="border-color:rgba(255,214,0,0.3);text-align:center;">
+          <div style="font-size:3rem;margin-bottom:12px;">&#x26A0;&#xFE0F;</div>
+          <h3 class="risk-yellow">MEDIUM RISK</h3>
+          <p class="small">Slippage 3-10%<br/>Low liquidity warning<br/>User decides</p>
+          <div style="margin-top:16px;padding:12px;border-radius:12px;background:rgba(255,214,0,0.08);border:1px solid rgba(255,214,0,0.2);">
+            <p class="small" style="color:var(--yellow);">Proceed with Caution</p>
+          </div>
+        </div>
+        <div class="card" style="border-color:rgba(255,23,68,0.3);text-align:center;">
+          <div style="font-size:3rem;margin-bottom:12px;">&#x1F6D1;</div>
+          <h3 class="risk-red">HIGH RISK</h3>
+          <p class="small">Slippage &gt; 10%<br/>Pool drain detected<br/>Execution blocked</p>
+          <div style="margin-top:16px;padding:12px;border-radius:12px;background:rgba(255,23,68,0.08);border:1px solid rgba(255,23,68,0.2);">
+            <p class="small" style="color:var(--red);">Blocked for Safety</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 7: Roadmap ==================== -->
+  <div class="slide" data-slide="7">
+    <div class="orb" style="width:350px;height:350px;background:var(--purple);bottom:-80px;left:-80px;opacity:0.1;"></div>
+
+    <div style="width:100%;max-width:900px;">
+      <div class="text-center">
+        <div class="tag tag-pink mb-24">Roadmap</div>
+        <h2>What's next</h2>
+      </div>
+
+      <div class="roadmap-phase" style="border-bottom:1px solid var(--dim);">
+        <div class="phase-badge phase-now">v1</div>
+        <div>
+          <h3 style="color:var(--green);margin-bottom:8px;">Now</h3>
+          <div class="phase-items">
+            <span class="phase-item" data-tip="Type &quot;swap 100 DOT to USDT&quot; in plain English. AI parses your intent and builds the transaction automatically.">Natural Language Swaps</span>
+            <span class="phase-item" data-tip="AI scores every swap by price impact, volatility, and liquidity. GREEN = safe, YELLOW = warning, RED = blocked.">AI Risk Guardian</span>
+            <span class="phase-item" data-tip="Send tokens to any address with natural language. &quot;Send 50 USDT to 0x...&quot; — parsed and executed in one step.">Token Transfers</span>
+            <span class="phase-item" data-tip="Deploy your own ERC-20 token with a chat command. Auto-whitelisted on MockDEX for immediate trading.">Token Factory</span>
+            <span class="phase-item" data-tip="Real-time view of all token balances in your wallet. Auto-refreshes after every transaction.">Portfolio Dashboard</span>
+            <span class="phase-item" data-tip="Full log of all executed intents — swaps, transfers, token creates. With risk scores, amounts, and tx hashes.">Transaction History</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="roadmap-phase" style="border-bottom:1px solid var(--dim);">
+        <div class="phase-badge phase-next">v2</div>
+        <div>
+          <h3 style="color:var(--pink);margin-bottom:8px;">Next</h3>
+          <div class="phase-items">
+            <span class="phase-item" data-tip="Account abstraction via EIP-7702. No more MetaMask popups — transactions feel like Web2. Gasless UX with paymaster.">EIP-7702 Smooth Mode</span>
+            <span class="phase-item" data-tip="Buy, sell, and transfer NFTs through natural language. &quot;Buy floor Moonbird&quot; — AI handles marketplace interaction.">NFT Trading</span>
+            <span class="phase-item" data-tip="Send tokens by name instead of address. &quot;Send 50 USDT to Alice&quot; — resolves People Chain identity to wallet address automatically.">People Chain Identity</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="roadmap-phase">
+        <div class="phase-badge phase-future">v3</div>
+        <div>
+          <h3 style="color:var(--purple);margin-bottom:8px;">Future</h3>
+          <div class="phase-items">
+            <span class="phase-item" data-tip="Describe your strategy in plain English: &quot;Buy 10 DOT daily if price is below 1 USDT&quot;. AI executes it automatically on schedule.">AI Trading Strategies</span>
+            <span class="phase-item" data-tip="Add liquidity to pools via natural language. AI calculates optimal amounts, warns about impermanent loss risk.">Liquidity Provision</span>
+            <span class="phase-item" data-tip="Route swaps across multiple DEXes for best price. AI compares rates and splits orders automatically.">DEX Aggregation</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 8: Team & Contact ==================== -->
+  <div class="slide" data-slide="8">
+    <div class="orb" style="width:400px;height:400px;background:var(--pink);top:-120px;left:-120px;opacity:0.1;"></div>
+    <div class="orb" style="width:300px;height:300px;background:var(--cyan);bottom:-80px;right:-80px;opacity:0.1;"></div>
+
+    <div class="text-center max-w">
+      <div class="tag tag-pink mb-40">Team</div>
+
+      <!-- Avatar -->
+      <div style="width:120px;height:120px;border-radius:50%;margin:0 auto 24px;border:3px solid rgba(230,0,122,0.4);overflow:hidden;background:var(--surface);display:flex;align-items:center;justify-content:center;">
+        <div style="font-size:3rem;">&#x1F468;&#x200D;&#x1F4BB;</div>
+      </div>
+
+      <h2 style="margin-bottom:12px;">Pavel Malykh</h2>
+      <p style="font-size:1.1rem;color:var(--muted);margin-bottom:48px;">Web3 Builder</p>
+
+      <!-- Contact cards -->
+      <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+        <a href="https://github.com/PavelMal" target="_blank" style="text-decoration:none;">
+          <div class="card" style="padding:24px 40px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all 0.2s;border-color:rgba(255,255,255,0.15);">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            <div style="text-align:left;">
+              <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">GitHub</div>
+              <div style="font-size:1rem;font-weight:600;color:var(--text);">PavelMal</div>
+            </div>
+          </div>
+        </a>
+
+        <a href="https://t.me/PAULMAL" target="_blank" style="text-decoration:none;">
+          <div class="card" style="padding:24px 40px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all 0.2s;border-color:rgba(0,178,255,0.3);">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="#00B2FF"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            <div style="text-align:left;">
+              <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Telegram</div>
+              <div style="font-size:1rem;font-weight:600;color:#00B2FF;">@PAULMAL</div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <p style="margin-top:48px;font-size:1.3rem;font-weight:600;color:var(--text);">
+        Thank you!
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav" id="nav">
+  <button class="nav-btn" id="prev-btn">&larr;</button>
+  <div id="dots"></div>
+  <button class="nav-btn" id="next-btn">&rarr;</button>
+  <span class="nav-count" id="counter"></span>
+</div>
+
+<script>
+  const deck = document.getElementById('deck');
+  const slides = deck.querySelectorAll('.slide');
+  const dotsContainer = document.getElementById('dots');
+  const counter = document.getElementById('counter');
+  let current = 0;
+
+  // Build dots
+  slides.forEach((_, i) => {
+    const dot = document.createElement('span');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotsContainer.appendChild(dot);
+  });
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    dotsContainer.children[current].classList.remove('active');
+    current = (n + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    dotsContainer.children[current].classList.add('active');
+    counter.textContent = `${current + 1} / ${slides.length}`;
+  }
+
+  document.getElementById('prev-btn').onclick = () => goTo(current - 1);
+  document.getElementById('next-btn').onclick = () => goTo(current + 1);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1); }
+  });
+
+  counter.textContent = `1 / ${slides.length}`;
+
+  // === Solution slide animation (5-phase like README SVG) ===
+  const SOL_TEXT = 'Swap 100 DOT for USDT';
+  let solTimer = null;
+  let solRunning = false;
+  const phases = ['ph-typing','ph-thinking','ph-preview','ph-confirming','ph-success'];
+
+  function showPhase(id) {
+    phases.forEach(p => document.getElementById(p).classList.remove('show'));
+    document.getElementById(id).classList.add('show');
+  }
+
+  function resetSolution() {
+    clearTimeout(solTimer);
+    solRunning = false;
+    phases.forEach(p => document.getElementById(p).classList.remove('show'));
+    document.getElementById('sol-typed').textContent = '';
+    document.getElementById('sol-cursor').style.display = 'inline-block';
+  }
+
+  function runSolution() {
+    if (solRunning) return;
+    solRunning = true;
+    resetSolution();
+
+    const typed = document.getElementById('sol-typed');
+    const cursor = document.getElementById('sol-cursor');
+
+    // Phase 1: Typing
+    showPhase('ph-typing');
+    let charIdx = 0;
+    function typeChar() {
+      if (charIdx < SOL_TEXT.length) {
+        typed.textContent += SOL_TEXT[charIdx];
+        charIdx++;
+        solTimer = setTimeout(typeChar, 50 + Math.random() * 30);
+      } else {
+        cursor.style.display = 'none';
+        // Phase 2: Thinking (1.5s)
+        solTimer = setTimeout(() => {
+          showPhase('ph-thinking');
+          // Phase 3: Preview (2.5s)
+          solTimer = setTimeout(() => {
+            showPhase('ph-preview');
+            // Phase 4: Confirming — user clicks confirm (1.5s pause then switch)
+            solTimer = setTimeout(() => {
+              showPhase('ph-confirming');
+              // Phase 5: Success (after 2s spinner)
+              solTimer = setTimeout(() => {
+                showPhase('ph-success');
+                // Loop after 3s
+                solTimer = setTimeout(() => {
+                  solRunning = false;
+                  if (current === 2) runSolution();
+                }, 3000);
+              }, 2000);
+            }, 2500);
+          }, 1500);
+        }, 600);
+      }
+    }
+    solTimer = setTimeout(typeChar, 500);
+  }
+
+  // Override goTo to trigger/reset solution animation
+  const origGoTo = goTo;
+  goTo = function(n) {
+    origGoTo(n);
+    if (current === 2) {
+      resetSolution();
+      setTimeout(runSolution, 400);
+    } else {
+      resetSolution();
+    }
+  };
+</script>
+
+</body>
+</html>

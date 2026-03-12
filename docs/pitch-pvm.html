@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IntentDOT — PVM Track Pitch</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a1a;
+    --surface: #12122a;
+    --pink: #E6007A;
+    --purple: #552BBF;
+    --cyan: #00B2FF;
+    --green: #00c853;
+    --yellow: #ffd600;
+    --red: #ff1744;
+    --text: #ffffff;
+    --muted: rgba(255,255,255,0.4);
+    --dim: rgba(255,255,255,0.15);
+    --rust: #DEA584;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* Slide container */
+  .deck { position: relative; width: 100vw; height: 100vh; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+  .slide.active { opacity: 1; pointer-events: auto; }
+
+  /* Typography */
+  h1 { font-size: 4rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; }
+  h2 { font-size: 2.8rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 40px; }
+  h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+  p { font-size: 1.15rem; line-height: 1.7; color: var(--muted); }
+  .small { font-size: 0.95rem; }
+
+  .gradient-text {
+    background: linear-gradient(135deg, var(--pink), var(--purple), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .tag-pink { border: 1px solid rgba(230,0,122,0.3); background: rgba(230,0,122,0.1); color: var(--pink); }
+  .tag-green { border: 1px solid rgba(0,200,83,0.3); background: rgba(0,200,83,0.1); color: var(--green); }
+  .tag-rust { border: 1px solid rgba(222,165,132,0.3); background: rgba(222,165,132,0.1); color: var(--rust); }
+
+  /* Layout helpers */
+  .text-center { text-align: center; }
+  .max-w { max-width: 900px; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-24 { margin-bottom: 24px; }
+  .mb-40 { margin-bottom: 40px; }
+  .mb-48 { margin-bottom: 48px; }
+  .gap-24 { gap: 24px; }
+  .gap-16 { gap: 16px; }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; width: 100%; max-width: 1000px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; width: 100%; max-width: 1100px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; width: 100%; max-width: 1000px; }
+
+  /* Cards */
+  .card {
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid var(--dim);
+    background: rgba(255,255,255,0.02);
+  }
+  .card-pink { border-color: rgba(230,0,122,0.2); }
+  .card-green { border-color: rgba(0,200,83,0.2); }
+  .card-purple { border-color: rgba(85,43,191,0.2); }
+  .card-cyan { border-color: rgba(0,178,255,0.2); }
+  .card-yellow { border-color: rgba(255,214,0,0.2); }
+  .card-rust { border-color: rgba(222,165,132,0.2); }
+
+  .icon-box {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+  }
+  .icon-pink { background: rgba(230,0,122,0.1); border: 1px solid rgba(230,0,122,0.2); }
+  .icon-green { background: rgba(0,200,83,0.1); border: 1px solid rgba(0,200,83,0.2); }
+  .icon-purple { background: rgba(85,43,191,0.1); border: 1px solid rgba(85,43,191,0.2); }
+  .icon-cyan { background: rgba(0,178,255,0.1); border: 1px solid rgba(0,178,255,0.2); }
+  .icon-yellow { background: rgba(255,214,0,0.1); border: 1px solid rgba(255,214,0,0.2); }
+  .icon-red { background: rgba(255,23,68,0.1); border: 1px solid rgba(255,23,68,0.2); }
+  .icon-rust { background: rgba(222,165,132,0.1); border: 1px solid rgba(222,165,132,0.2); }
+
+  /* Problem slide specifics */
+  .problem-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--dim);
+  }
+  .problem-item:last-child { border-bottom: none; }
+  .problem-num {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--red);
+    opacity: 0.4;
+    min-width: 50px;
+  }
+
+  /* Architecture */
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+  .arch-box {
+    padding: 14px 24px;
+    border-radius: 14px;
+    border: 1px solid var(--dim);
+    background: rgba(255,255,255,0.03);
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .arch-arrow { color: var(--muted); font-size: 1.2rem; }
+  .arch-box.highlight-pink { border-color: rgba(230,0,122,0.4); background: rgba(230,0,122,0.08); color: var(--pink); }
+  .arch-box.highlight-green { border-color: rgba(0,200,83,0.4); background: rgba(0,200,83,0.08); color: var(--green); }
+  .arch-box.highlight-purple { border-color: rgba(85,43,191,0.4); background: rgba(85,43,191,0.08); color: var(--purple); }
+  .arch-box.highlight-cyan { border-color: rgba(0,178,255,0.4); background: rgba(0,178,255,0.08); color: var(--cyan); }
+  .arch-box.highlight-rust { border-color: rgba(222,165,132,0.4); background: rgba(222,165,132,0.08); color: var(--rust); }
+
+  /* Roadmap */
+  .roadmap-phase {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 24px 0;
+  }
+  .phase-badge {
+    min-width: 56px;
+    padding: 6px 0;
+    text-align: center;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .phase-now { background: rgba(0,200,83,0.15); color: var(--green); border: 1px solid rgba(0,200,83,0.3); }
+  .phase-next { background: rgba(230,0,122,0.15); color: var(--pink); border: 1px solid rgba(230,0,122,0.3); }
+  .phase-future { background: rgba(85,43,191,0.15); color: var(--purple); border: 1px solid rgba(85,43,191,0.3); }
+  .phase-items { display: flex; flex-wrap: wrap; gap: 8px; }
+  .phase-item {
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--dim);
+    background: rgba(255,255,255,0.02);
+    font-size: 0.85rem;
+    color: var(--muted);
+    position: relative;
+  }
+  .phase-item[data-tip] {
+    cursor: help;
+    padding-right: 30px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  /* ? badge */
+  .phase-item[data-tip]::after {
+    content: '?';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(222,165,132,0.15);
+    border: 1px solid rgba(222,165,132,0.35);
+    color: var(--rust);
+    font-size: 0.6rem;
+    font-weight: 700;
+  }
+  .phase-item[data-tip]:hover {
+    border-color: rgba(222,165,132,0.6);
+    background: rgba(222,165,132,0.12);
+  }
+  /* tooltip */
+  .phase-item[data-tip]:hover::before {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #1a1428;
+    border: 1px solid rgba(222,165,132,0.3);
+    color: var(--text);
+    font-size: 0.75rem;
+    line-height: 1.5;
+    white-space: normal;
+    width: 260px;
+    text-align: left;
+    z-index: 10;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  /* Navigation */
+  .nav {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    border-radius: 100px;
+    background: rgba(18,18,42,0.9);
+    border: 1px solid var(--dim);
+    backdrop-filter: blur(20px);
+    z-index: 100;
+  }
+  .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--dim);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .nav-dot.active { background: var(--pink); transform: scale(1.3); }
+  .nav-count { font-size: 0.7rem; color: var(--muted); margin-left: 8px; }
+
+  .nav-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--dim);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+
+  /* Decorative orbs */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    opacity: 0.15;
+  }
+
+  /* Risk badges inline */
+  .risk-green { color: var(--green); font-weight: 600; }
+  .risk-yellow { color: var(--yellow); font-weight: 600; }
+  .risk-red { color: var(--red); font-weight: 600; }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 48px;
+    justify-content: center;
+    margin-top: 40px;
+  }
+  .stat { text-align: center; }
+  .stat-num { font-size: 2.4rem; font-weight: 800; }
+  .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+  /* Team */
+  .team-info { text-align: center; margin-top: 32px; }
+
+  /* Pipeline flow diagram */
+  .pipeline-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 32px auto;
+    flex-wrap: wrap;
+    max-width: 1000px;
+  }
+  .pipeline-box {
+    padding: 20px 28px;
+    border-radius: 16px;
+    text-align: center;
+    min-width: 160px;
+    position: relative;
+  }
+  .pipeline-box-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 6px;
+  }
+  .pipeline-box-name {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .pipeline-box-sub {
+    font-size: 0.75rem;
+    margin-top: 4px;
+  }
+  .pipeline-arrow {
+    font-size: 1.6rem;
+    padding: 0 8px;
+    color: var(--dim);
+    animation: arrow-pulse 2s ease-in-out infinite;
+  }
+  @keyframes arrow-pulse { 0%,100%{opacity:0.3;} 50%{opacity:1;} }
+
+  .pipeline-branch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .pipeline-branch-arrow {
+    font-size: 1.2rem;
+    color: var(--dim);
+  }
+
+  /* Cross-VM visual */
+  .cross-vm {
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    justify-content: center;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .vm-side {
+    flex: 1;
+    padding: 28px 24px;
+    border-radius: 20px;
+    position: relative;
+  }
+  .vm-side-sol {
+    background: rgba(230,0,122,0.04);
+    border: 1px solid rgba(230,0,122,0.2);
+    border-right: none;
+    border-radius: 20px 0 0 20px;
+  }
+  .vm-side-rust {
+    background: rgba(222,165,132,0.04);
+    border: 1px solid rgba(222,165,132,0.2);
+    border-left: none;
+    border-radius: 0 20px 20px 0;
+  }
+  .vm-bridge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 20px;
+    background: linear-gradient(180deg, rgba(230,0,122,0.08), rgba(222,165,132,0.08));
+    border-top: 1px solid var(--dim);
+    border-bottom: 1px solid var(--dim);
+    min-width: 120px;
+  }
+  .vm-bridge-arrow {
+    font-size: 1.5rem;
+    animation: bridge-glow 2s ease-in-out infinite;
+  }
+  @keyframes bridge-glow {
+    0%,100% { opacity: 0.3; text-shadow: none; }
+    50% { opacity: 1; text-shadow: 0 0 12px rgba(230,0,122,0.5); }
+  }
+  .vm-contract {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--dim);
+    background: rgba(255,255,255,0.03);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .vm-contract:last-child { margin-bottom: 0; }
+
+  /* Verdict flow */
+  .verdict-split {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  .verdict-box {
+    padding: 14px 24px;
+    border-radius: 14px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    min-width: 140px;
+  }
+  .verdict-green {
+    background: rgba(0,200,83,0.08);
+    border: 1px solid rgba(0,200,83,0.3);
+    color: var(--green);
+  }
+  .verdict-yellow {
+    background: rgba(255,214,0,0.08);
+    border: 1px solid rgba(255,214,0,0.3);
+    color: var(--yellow);
+  }
+  .verdict-red {
+    background: rgba(255,23,68,0.08);
+    border: 1px solid rgba(255,23,68,0.3);
+    color: var(--red);
+  }
+
+  /* On-chain result card */
+  .onchain-result {
+    margin: 32px auto 0;
+    max-width: 420px;
+    padding: 20px 28px;
+    border-radius: 16px;
+    background: rgba(0,200,83,0.06);
+    border: 1px solid rgba(0,200,83,0.25);
+    text-align: left;
+    animation: result-fade-in 1s ease forwards;
+  }
+  @keyframes result-fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .onchain-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 0.85rem;
+  }
+  .onchain-row span:first-child { color: var(--muted); }
+  .onchain-row strong { color: var(--text); }
+  .onchain-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: rgba(0,200,83,0.15);
+    color: var(--green);
+    border: 1px solid rgba(0,200,83,0.3);
+    margin-top: 8px;
+  }
+
+  /* Slide 2 animated flow */
+  .flow-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .flow-step {
+    opacity: 0;
+    transform: translateY(15px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .flow-step.show { opacity: 1; transform: translateY(0); }
+
+  .flow-live-badge {
+    position: absolute; top: 12px; right: 16px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.65rem; color: var(--muted);
+  }
+  .flow-live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); animation: flow-pulse 2s infinite;
+  }
+  @keyframes flow-pulse { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
+
+  /* Solution animation — bridge demo */
+  .sol-app {
+    width: 100%; max-width: 520px; margin: 0 auto;
+    border-radius: 20px; border: 1px solid var(--dim);
+    background: linear-gradient(180deg, #110d1a, #0a0710);
+    min-height: 460px; position: relative; overflow: hidden;
+  }
+  .sol-dual {
+    max-width: 480px; min-height: 440px; cursor: pointer;
+    transition: opacity 0.4s ease, border-color 0.4s ease;
+  }
+  .sol-dual.dimmed {
+    opacity: 0.35;
+    border-color: rgba(255,255,255,0.04);
+  }
+  .sol-dual.active {
+    border-color: rgba(222,165,132,0.3);
+  }
+  .sol-phase {
+    position: absolute; inset: 0; padding: 24px 28px;
+    opacity: 0; transition: opacity 0.45s ease;
+    display: flex; flex-direction: column;
+  }
+  .sol-phase.show { opacity: 1; }
+  .sol-loop-badge {
+    position: absolute; top: 12px; right: 16px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.65rem; color: var(--muted);
+  }
+  .sol-loop-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); animation: sol-pulse 2s infinite;
+  }
+  @keyframes sol-pulse { 0%,100%{opacity:0.4;} 50%{opacity:1;} }
+  .sol-input-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px; border-radius: 14px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  }
+  .sol-input-text { flex: 1; font-size: 0.95rem; color: var(--text); }
+  .sol-cursor { display: inline-block; width: 2px; height: 1.1em; background: var(--rust); vertical-align: text-bottom; animation: sol-blink 0.53s step-end infinite; }
+  @keyframes sol-blink { 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
+  .sol-send-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(222,165,132,0.3); border: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sol-phase-label { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: auto; }
+  .sol-dots { display: flex; gap: 8px; align-items: center; justify-content: center; }
+  .sol-dots span {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: rgba(222,165,132,0.6); animation: sol-bounce 1.2s infinite;
+  }
+  .sol-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .sol-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes sol-bounce { 0%,60%,100%{transform:translateY(0);opacity:0.3;} 30%{transform:translateY(-8px);opacity:1;} }
+  .sol-ai-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: rgba(222,165,132,0.1); border: 1px solid rgba(222,165,132,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; margin: 0 auto 16px;
+  }
+  .sol-preview-label {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 2px;
+    color: rgba(255,255,255,0.3); margin-bottom: 10px;
+  }
+  .sol-amount-box {
+    padding: 14px; border-radius: 12px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 8px; text-align: center;
+  }
+  .sol-amount-label { font-size: 0.65rem; font-weight: 600; letter-spacing: 1.5px; color: rgba(255,255,255,0.3); margin-bottom: 4px; }
+  .sol-amount-val { font-size: 1.4rem; font-weight: 700; }
+  .sol-amount-token { font-size: 0.9rem; font-weight: 700; opacity: 0.5; }
+  .sol-arrow-divider { text-align: center; color: rgba(255,255,255,0.15); font-size: 1rem; margin: -4px 0; position: relative; z-index: 1; }
+  .sol-detail-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 0.8rem; color: var(--muted); }
+  .sol-detail-row strong { color: var(--text); font-weight: 500; }
+  .sol-risk-bar {
+    margin-top: 6px; padding: 8px; border-radius: 10px;
+    background: rgba(0,200,83,0.07); border: 1px solid rgba(0,200,83,0.25);
+    text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--green);
+  }
+  .sol-btn-row { display: flex; gap: 10px; margin-top: 10px; }
+  .sol-btn-cancel {
+    flex: 1; padding: 10px; border-radius: 10px; text-align: center;
+    border: 1px solid rgba(255,255,255,0.1); background: transparent;
+    color: rgba(255,255,255,0.4); font-size: 0.85rem; font-weight: 500;
+  }
+  .sol-btn-confirm {
+    flex: 1; padding: 10px; border-radius: 10px; text-align: center;
+    background: var(--rust); border: none;
+    color: white; font-size: 0.85rem; font-weight: 600;
+  }
+  @keyframes sol-spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+  .sol-spinner {
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.06);
+    border-top: 3px solid var(--green);
+    animation: sol-spin 1s linear infinite;
+    margin: 0 auto 20px;
+  }
+  .sol-success-header {
+    display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 20px;
+  }
+  .sol-check-circle {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(86,243,154,0.1); border: 1.5px solid rgba(86,243,154,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+  }
+  .sol-success-title { font-size: 0.9rem; font-weight: 600; letter-spacing: 2px; color: rgba(86,243,154,0.8); }
+  .sol-tx-row { margin-top: 14px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; }
+  .sol-tx-label { color: rgba(255,255,255,0.25); }
+  .sol-tx-hash { color: rgba(0,178,255,0.7); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ==================== SLIDE 0: Title ==================== -->
+  <div class="slide active" data-slide="0">
+    <div class="orb" style="width:400px;height:400px;background:var(--pink);top:-100px;right:-100px;"></div>
+    <div class="orb" style="width:300px;height:300px;background:var(--rust);bottom:-50px;left:-50px;"></div>
+
+    <div class="text-center max-w">
+      <div class="tag tag-pink mb-40">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--pink);"></span>
+        Polkadot Solidity Hackathon 2026
+      </div>
+      <h1 class="mb-24">
+        Intent<span class="gradient-text">DOT</span>
+      </h1>
+      <p style="font-size:1.5rem;color:rgba(255,255,255,0.5);margin-bottom:48px;">
+        Rust Risk Engine + XCM Bridge on PVM
+      </p>
+      <p class="small" style="color:rgba(255,255,255,0.2);">
+        <strong style="color:var(--rust);">PVM Track</strong> &middot; Rust/PolkaVM Category
+      </p>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 1: Challenge ==================== -->
+  <div class="slide" data-slide="1">
+    <div class="orb" style="width:300px;height:300px;background:var(--red);top:10%;left:-80px;opacity:0.1;"></div>
+
+    <div style="width:100%;max-width:1100px;">
+      <div class="text-center">
+        <div class="tag tag-pink mb-24">Challenge</div>
+        <h2>Bridging is painful. Risk checks don't exist on-chain.</h2>
+      </div>
+
+      <!-- Mock platform UIs row -->
+      <div style="display:flex;gap:16px;justify-content:center;margin-bottom:40px;flex-wrap:wrap;">
+
+        <!-- 1: Generic Bridge App -->
+        <div style="width:220px;border-radius:16px;padding:16px;background:linear-gradient(135deg,#1b1b2f,#2d1f4e);border:1px solid rgba(255,255,255,0.08);opacity:0.7;transform:rotate(-2deg);font-size:0.65rem;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <span style="color:#ff007a;font-weight:700;font-size:0.7rem;">BridgeX</span>
+            <span style="background:rgba(255,0,122,0.15);padding:1px 6px;border-radius:4px;color:#ff007a;font-size:0.5rem;">Bridge</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;margin-bottom:6px;">
+            <div style="color:rgba(255,255,255,0.2);font-size:0.5rem;">Source Chain</div>
+            <div style="color:white;font-size:0.7rem;font-weight:600;">Polkadot Hub</div>
+          </div>
+          <div style="text-align:center;color:rgba(255,255,255,0.15);margin:4px 0;">&#8595;</div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;margin-bottom:6px;">
+            <div style="color:rgba(255,255,255,0.2);font-size:0.5rem;">Destination Chain</div>
+            <div style="color:white;font-size:0.7rem;font-weight:600;">Relay Chain</div>
+          </div>
+          <div style="color:rgba(255,255,255,0.15);font-size:0.45rem;margin-bottom:6px;text-align:center;">5 steps. 2 wallets. Manual XCM.</div>
+          <div style="background:rgba(255,0,122,0.3);text-align:center;padding:6px;border-radius:10px;color:white;font-size:0.65rem;font-weight:600;">Connect Wallet</div>
+        </div>
+
+        <!-- 2: Another Bridge App -->
+        <div style="width:220px;border-radius:16px;padding:16px;background:linear-gradient(135deg,#0e1a2e,#0a2540);border:1px solid rgba(0,178,255,0.15);opacity:0.7;transform:rotate(1deg);font-size:0.65rem;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <span style="color:#00b2ff;font-weight:700;font-size:0.7rem;">TeleportUI</span>
+            <span style="background:rgba(0,178,255,0.15);padding:1px 6px;border-radius:4px;color:#00b2ff;font-size:0.5rem;">XCM</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;margin-bottom:6px;">
+            <div style="color:rgba(255,255,255,0.2);font-size:0.5rem;">Asset</div>
+            <div style="color:white;font-size:0.7rem;font-weight:600;">PAS &middot; 100.0</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;margin-bottom:6px;">
+            <div style="color:rgba(255,255,255,0.2);font-size:0.5rem;">Destination</div>
+            <div style="color:rgba(255,255,255,0.25);font-size:0.6rem;font-family:monospace;">para_id: 1000</div>
+          </div>
+          <div style="color:rgba(255,255,255,0.15);font-size:0.45rem;margin-bottom:6px;text-align:center;">Different UI. Different flow. Same confusion.</div>
+          <div style="background:rgba(0,178,255,0.3);text-align:center;padding:6px;border-radius:10px;color:white;font-size:0.65rem;font-weight:600;">Teleport</div>
+        </div>
+
+        <!-- 3: DEX without risk check -->
+        <div style="width:220px;border-radius:16px;padding:16px;background:linear-gradient(135deg,#1a0e0e,#2e1a1a);border:1px solid rgba(255,23,68,0.15);opacity:0.7;transform:rotate(-1.5deg);font-size:0.65rem;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <span style="color:#ff1744;font-weight:700;font-size:0.7rem;">BlindSwap</span>
+            <span style="background:rgba(255,23,68,0.15);padding:1px 6px;border-radius:4px;color:#ff1744;font-size:0.5rem;">DEX</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;margin-bottom:6px;">
+            <div style="color:rgba(255,255,255,0.2);font-size:0.5rem;">Swap 100 DOT &rarr; USDT</div>
+            <div style="color:white;font-size:0.7rem;font-weight:600;">Expected: 450 USDT</div>
+          </div>
+          <div style="background:rgba(255,23,68,0.08);border-radius:8px;padding:8px;margin-bottom:6px;">
+            <div style="color:rgba(255,23,68,0.5);font-size:0.5rem;">Pool drained 80%. Slippage 47%.</div>
+            <div style="color:var(--red);font-size:0.7rem;font-weight:600;">Received: 238 USDT</div>
+          </div>
+          <div style="color:rgba(255,23,68,0.4);font-size:0.45rem;margin-bottom:6px;text-align:center;">No risk check. No revert. Funds lost.</div>
+          <div style="background:rgba(255,23,68,0.3);text-align:center;padding:6px;border-radius:10px;color:white;font-size:0.65rem;font-weight:600;">Swap Anyway</div>
+        </div>
+
+      </div>
+
+      <!-- Pain points -->
+      <div style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;border:1px solid rgba(255,23,68,0.2);background:rgba(255,23,68,0.05);">
+          <span style="font-size:1.2rem;">&#x1F310;</span>
+          <span class="small" style="color:rgba(255,255,255,0.5);"><strong style="color:var(--red);">Every bridge has different UX</strong> &mdash; confusing, error-prone</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 20px;border-radius:12px;border:1px solid rgba(255,214,0,0.2);background:rgba(255,214,0,0.05);">
+          <span style="font-size:1.2rem;">&#x26A0;</span>
+          <span class="small" style="color:rgba(255,255,255,0.5);"><strong style="color:var(--yellow);">No on-chain safety gate</strong> &mdash; contracts execute blindly</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 2: Solution ==================== -->
+  <div class="slide" data-slide="2" id="slide-solution">
+    <div class="orb" style="width:350px;height:350px;background:var(--green);bottom:-80px;right:-80px;opacity:0.12;"></div>
+
+    <div class="text-center" style="width:100%;max-width:1100px;">
+      <div class="tag tag-green mb-24">Solution</div>
+      <h2>Rust Risk Engine + XCM Bridge.<br/>One chat interface.</h2>
+
+      <!-- Two demo windows side by side -->
+      <div style="display:flex;gap:16px;justify-content:center;max-width:1100px;margin:0 auto;">
+
+        <!-- SWAP demo -->
+        <div class="sol-app sol-dual" id="app-swap" data-demo="swap">
+          <div class="sol-loop-badge"><span class="sol-loop-dot" id="dot-swap"></span> Swap</div>
+
+          <div class="sol-phase" data-ph="typing">
+            <div class="sol-input-bar">
+              <div class="sol-input-text"><span class="typed-text"></span><span class="sol-cursor"></span></div>
+              <div class="sol-send-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="#DEA584" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="sol-phase-label" style="margin-top:auto;">User typing...</div>
+          </div>
+
+          <div class="sol-phase" data-ph="thinking" style="justify-content:center;align-items:center;">
+            <div class="sol-ai-icon">&#x1F9EE;</div>
+            <div class="sol-dots"><span></span><span></span><span></span></div>
+            <div class="sol-phase-label" style="margin-top:20px;">AI analyzing risk...</div>
+          </div>
+
+          <div class="sol-phase" data-ph="preview">
+            <div class="sol-preview-label">TRANSACTION PREVIEW</div>
+            <div class="sol-amount-box">
+              <div class="sol-amount-label">YOU SEND</div>
+              <div><span class="sol-amount-val" style="color:var(--text);">100 </span><span class="sol-amount-token" style="color:var(--muted);">DOT</span></div>
+            </div>
+            <div style="text-align:center;color:rgba(255,255,255,0.15);margin:4px 0;">&#x25BC;</div>
+            <div class="sol-amount-box">
+              <div class="sol-amount-label">YOU RECEIVE</div>
+              <div><span class="sol-amount-val" style="color:var(--green);">685.42 </span><span class="sol-amount-token" style="color:rgba(86,243,154,0.5);">USDT</span></div>
+            </div>
+            <div class="sol-detail-row"><span>Slippage</span><strong>0.31%</strong></div>
+            <div class="sol-detail-row"><span>Price Impact</span><strong>0.01%</strong></div>
+            <div style="padding:8px 12px;border-radius:10px;background:rgba(0,200,83,0.06);border:1px solid rgba(0,200,83,0.2);text-align:center;font-size:0.8rem;font-weight:600;color:var(--green);margin:8px 0;">&#x2705; LOW RISK</div>
+            <div class="sol-btn-row">
+              <div class="sol-btn-cancel">Cancel</div>
+              <div class="sol-btn-confirm">Confirm Swap</div>
+            </div>
+          </div>
+
+          <div class="sol-phase" data-ph="confirming" style="justify-content:center;align-items:center;">
+            <div class="sol-spinner"></div>
+            <div style="font-size:1rem;font-weight:500;color:rgba(255,255,255,0.8);margin-bottom:8px;">On-chain verification...</div>
+            <div style="font-size:0.85rem;color:var(--muted);">Risk Guardian validating swap</div>
+          </div>
+
+          <div class="sol-phase" data-ph="success">
+            <div class="sol-success-header">
+              <div class="sol-check-circle">&#x2714;</div>
+              <div style="font-size:0.85rem;font-weight:600;letter-spacing:2px;color:var(--green);">SWAP SUCCESSFUL</div>
+            </div>
+            <div class="sol-amount-box" style="padding:16px;">
+              <div class="sol-amount-label">SENT</div>
+              <div><span class="sol-amount-val" style="color:var(--text);font-size:1.3rem;">100 </span><span class="sol-amount-token" style="color:var(--muted);font-size:0.9rem;">DOT</span></div>
+              <div style="color:rgba(255,255,255,0.15);margin:4px 0;">&#x25BC;</div>
+              <div class="sol-amount-label">RECEIVED</div>
+              <div><span class="sol-amount-val" style="color:var(--green);font-size:1.3rem;">685.42 </span><span class="sol-amount-token" style="color:rgba(86,243,154,0.5);font-size:0.9rem;">USDT</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:rgba(0,200,83,0.06);border:1px solid rgba(0,200,83,0.2);margin-bottom:8px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>
+              <span style="font-size:0.8rem;font-weight:600;color:var(--green);">GREEN</span>
+              <span style="font-size:0.75rem;color:var(--muted);">Score 4/100</span>
+              <span style="margin-left:auto;font-size:0.65rem;font-weight:600;color:var(--green);">ON-CHAIN VERIFIED</span>
+            </div>
+            <div class="sol-tx-row">
+              <span class="sol-tx-label">Transaction</span>
+              <span class="sol-tx-hash">0xc5f7e324...b85d60</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- BRIDGE demo -->
+        <div class="sol-app sol-dual" id="app-bridge" data-demo="bridge">
+          <div class="sol-loop-badge"><span class="sol-loop-dot" id="dot-bridge"></span> Bridge</div>
+
+          <div class="sol-phase" data-ph="typing">
+            <div class="sol-input-bar">
+              <div class="sol-input-text"><span class="typed-text"></span><span class="sol-cursor"></span></div>
+              <div class="sol-send-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="#DEA584" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="sol-phase-label" style="margin-top:auto;">User typing...</div>
+          </div>
+
+          <div class="sol-phase" data-ph="thinking" style="justify-content:center;align-items:center;">
+            <div class="sol-ai-icon">&#x1F310;</div>
+            <div class="sol-dots"><span></span><span></span><span></span></div>
+            <div class="sol-phase-label" style="margin-top:20px;">Building XCM teleport...</div>
+          </div>
+
+          <div class="sol-phase" data-ph="preview">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div class="sol-preview-label" style="margin-bottom:0;">BRIDGE PREVIEW</div>
+              <div style="padding:4px 12px;border-radius:8px;font-size:0.65rem;font-weight:600;color:var(--cyan);border:1px solid rgba(0,178,255,0.3);background:rgba(0,178,255,0.08);">XCM Teleport</div>
+            </div>
+            <div class="sol-amount-box" style="padding:18px 14px;">
+              <div class="sol-amount-label">YOU BRIDGE</div>
+              <div><span class="sol-amount-val" style="color:var(--text);font-size:1.6rem;">20 </span><span class="sol-amount-token" style="font-size:1rem;">PAS</span></div>
+              <div style="margin:10px 0;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;margin-left:auto;margin-right:auto;font-size:0.9rem;color:var(--muted);">&#x21C5;</div>
+              <div class="sol-amount-label">TO CHAIN</div>
+              <div style="font-size:1rem;font-weight:600;color:var(--cyan);">Paseo Relay Chain</div>
+            </div>
+            <div style="padding:10px 14px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);margin-bottom:8px;">
+              <div class="sol-detail-row"><span>Estimated fees</span><strong>~2.2 PAS</strong></div>
+              <div class="sol-detail-row"><span>Minimum amount</span><strong>1.2 PAS</strong></div>
+              <div class="sol-detail-row"><span>You receive (approx)</span><strong style="color:var(--green);">~17.8 PAS</strong></div>
+            </div>
+            <div style="padding:10px;border-radius:10px;background:rgba(0,178,255,0.06);border:1px solid rgba(0,178,255,0.2);text-align:center;font-size:0.8rem;font-weight:600;color:var(--cyan);margin-bottom:8px;">
+              XCM Teleport &mdash; Hub to Paseo Relay Chain
+            </div>
+            <div class="sol-btn-row">
+              <div class="sol-btn-cancel">Cancel</div>
+              <div class="sol-btn-confirm">Confirm Bridge</div>
+            </div>
+          </div>
+
+          <div class="sol-phase" data-ph="confirming" style="justify-content:center;align-items:center;">
+            <div class="sol-spinner"></div>
+            <div style="font-size:1rem;font-weight:500;color:rgba(255,255,255,0.8);margin-bottom:8px;">XCM teleport in progress...</div>
+            <div style="font-size:0.85rem;color:var(--muted);">Hub &rarr; Relay Chain</div>
+          </div>
+
+          <div class="sol-phase" data-ph="success">
+            <div style="padding:14px;border-radius:14px;background:rgba(0,200,83,0.04);border:1px solid rgba(0,200,83,0.25);text-align:center;margin-bottom:12px;">
+              <div class="sol-success-header" style="margin-bottom:0;">
+                <div class="sol-check-circle">&#x2714;</div>
+                <div style="font-size:0.85rem;font-weight:600;letter-spacing:2px;color:var(--green);">BRIDGE SUBMITTED</div>
+              </div>
+            </div>
+            <div class="sol-amount-box" style="padding:18px 14px;">
+              <div class="sol-amount-label">BRIDGED</div>
+              <div><span class="sol-amount-val" style="color:var(--text);font-size:1.5rem;">20 </span><span class="sol-amount-token" style="font-size:1rem;">PAS</span></div>
+              <div style="margin:8px 0;font-size:0.9rem;color:var(--muted);">&#x21C5;</div>
+              <div class="sol-amount-label">TO CHAIN</div>
+              <div style="font-size:1rem;font-weight:600;color:var(--green);">Paseo Relay Chain</div>
+            </div>
+            <div class="sol-tx-row">
+              <span class="sol-tx-label">Relay address</span>
+              <span style="padding:4px 10px;border-radius:6px;border:1px solid rgba(0,178,255,0.3);font-family:'SF Mono','Fira Code',monospace;font-size:0.75rem;color:var(--cyan);">1X8wYgu5...FCtJNX</span>
+            </div>
+            <div class="sol-tx-row">
+              <span class="sol-tx-label">Transaction</span>
+              <span class="sol-tx-hash">0x9da7be0f...85bb85</span>
+            </div>
+            <div style="margin-top:12px;text-align:center;font-size:0.7rem;color:var(--muted);">
+              Funds arrive after XCM processing (~1-2 blocks)
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 3: How It Works ==================== -->
+  <div class="slide" data-slide="3">
+    <div class="orb" style="width:300px;height:300px;background:var(--purple);top:-80px;left:-80px;opacity:0.1;"></div>
+
+    <div style="width:100%;max-width:1000px;">
+      <div class="text-center">
+        <div class="tag tag-pink mb-24">How It Works</div>
+        <h2>From intent to on-chain verdict in 3 steps</h2>
+      </div>
+
+      <!-- Big visual flow: 3 steps -->
+      <div style="display:flex;gap:0;align-items:stretch;justify-content:center;margin-bottom:48px;">
+
+        <!-- Step 1: User confirms -->
+        <div style="flex:1;max-width:280px;text-align:center;padding:20px 16px;">
+          <div style="width:48px;height:48px;border-radius:14px;background:rgba(230,0,122,0.1);border:2px solid rgba(230,0,122,0.25);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 14px;">&#x1F4E5;</div>
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--pink);margin-bottom:8px;">Step 1</div>
+          <h3 style="font-size:1.3rem;margin-bottom:10px;">User confirms swap</h3>
+          <p class="small" style="margin-top:10px;">Swap amount, tokens, slippage tolerance</p>
+        </div>
+
+        <!-- Arrow -->
+        <div style="display:flex;align-items:center;padding:0 8px;margin-top:20px;">
+          <div style="font-size:1.8rem;color:var(--dim);">&#10132;</div>
+        </div>
+
+        <!-- Step 2: Risk Engine evaluates -->
+        <div style="flex:1;max-width:280px;text-align:center;padding:20px 16px;">
+          <div style="width:48px;height:48px;border-radius:14px;background:rgba(222,165,132,0.1);border:2px solid rgba(222,165,132,0.25);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 14px;">&#x1F9EE;</div>
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--rust);margin-bottom:8px;">Step 2</div>
+          <h3 style="font-size:1.3rem;margin-bottom:10px;">Risk Engine evaluates</h3>
+          <div style="background:rgba(222,165,132,0.06);border:1px solid rgba(222,165,132,0.15);border-radius:12px;padding:12px 16px;font-size:0.8rem;text-align:left;">
+            <div style="color:var(--muted);padding:4px 0;">&bull; Slippage vs moving average</div>
+            <div style="color:var(--muted);padding:4px 0;">&bull; Pool volatility</div>
+            <div style="color:var(--muted);padding:4px 0;">&bull; Liquidity drain ratio</div>
+            <div style="color:var(--rust);padding:6px 0 0;border-top:1px solid var(--dim);margin-top:4px;font-weight:600;">&rarr; Risk score 0&ndash;100</div>
+          </div>
+        </div>
+
+        <!-- Arrow -->
+        <div style="display:flex;align-items:center;padding:0 8px;margin-top:20px;">
+          <div style="font-size:1.8rem;color:var(--dim);">&#10132;</div>
+        </div>
+
+        <!-- Step 3: Verdict -->
+        <div style="flex:1;max-width:280px;text-align:center;padding:20px 16px;">
+          <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,200,83,0.1);border:2px solid rgba(0,200,83,0.25);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 14px;">&#x2696;</div>
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--green);margin-bottom:8px;">Step 3</div>
+          <h3 style="font-size:1.3rem;margin-bottom:10px;">Verdict</h3>
+          <div style="border-radius:12px;overflow:hidden;">
+            <div style="background:rgba(0,200,83,0.06);border:1px solid rgba(0,200,83,0.15);padding:8px 16px;font-size:0.8rem;border-bottom:none;border-radius:12px 12px 0 0;">
+              <span class="risk-green">GREEN</span> <span style="color:var(--muted);">(score &lt; 30) = proceed</span>
+            </div>
+            <div style="background:rgba(255,214,0,0.06);border:1px solid rgba(255,214,0,0.15);padding:8px 16px;font-size:0.8rem;border-bottom:none;">
+              <span class="risk-yellow">YELLOW</span> <span style="color:var(--muted);">(30-69) = warning</span>
+            </div>
+            <div style="background:rgba(255,23,68,0.06);border:1px solid rgba(255,23,68,0.15);padding:8px 16px;font-size:0.8rem;border-radius:0 0 12px 12px;">
+              <span class="risk-red">RED</span> <span style="color:var(--muted);">(70+) = <strong style="color:var(--red);">revert</strong></span>
+            </div>
+          </div>
+          <p class="small" style="margin-top:10px;">Automatic. On-chain.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 4: Risk Engine Deep Dive ==================== -->
+  <div class="slide" data-slide="4">
+    <div class="orb" style="width:300px;height:300px;background:var(--green);top:-60px;right:-60px;opacity:0.1;"></div>
+
+    <div class="text-center" style="width:100%;">
+      <div class="tag tag-rust mb-24">Risk Engine Deep Dive</div>
+      <h2>How the Rust contract scores risk</h2>
+
+      <div class="grid-4" style="margin:0 auto;">
+        <div class="card card-pink">
+          <div class="icon-box icon-pink">&#x1F4B1;</div>
+          <h3>Price Impact</h3>
+          <p class="small">How much the swap moves the pool price. Large trades on thin liquidity = high impact = high risk.</p>
+        </div>
+        <div class="card card-rust">
+          <div class="icon-box icon-rust">&#x1F4C8;</div>
+          <h3>Moving Average (MA20)</h3>
+          <p class="small">Tracks last 20 trade prices per pool. Detects deviation from fair price. Spots manipulation in real time.</p>
+        </div>
+        <div class="card card-purple">
+          <div class="icon-box icon-purple">&#x1F4CA;</div>
+          <h3>Volatility Tracking</h3>
+          <p class="small">Rolling standard deviation across recent trades. High volatility = higher risk score. Adapts to market conditions.</p>
+        </div>
+        <div class="card card-green">
+          <div class="icon-box icon-green">&#x1F3AF;</div>
+          <h3>Scoring System</h3>
+          <p class="small">Score 0-100 based on price impact, MA20 deviation, and volatility.<br/><span class="risk-green">GREEN &lt;40</span> &middot; <span class="risk-yellow">YELLOW &lt;70</span> &middot; <span class="risk-red">RED &ge;70</span></p>
+        </div>
+      </div>
+
+      <!-- On-chain result example -->
+      <div class="onchain-result">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <span style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--green);">On-Chain Result</span>
+          <span class="onchain-badge">&#x2705; ON-CHAIN VERIFIED</span>
+        </div>
+        <div class="onchain-row"><span>Verdict</span><strong style="color:var(--green);">GREEN</strong></div>
+        <div class="onchain-row"><span>Score</span><strong>4 / 100</strong></div>
+        <div class="onchain-row"><span>Price Impact</span><strong>0.31%</strong></div>
+        <div class="onchain-row"><span>Volatility</span><strong>1.00%</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 5: Cross-VM Architecture ==================== -->
+  <div class="slide" data-slide="5">
+    <div class="orb" style="width:350px;height:350px;background:var(--rust);top:-100px;right:-100px;opacity:0.1;"></div>
+
+    <div style="width:100%;max-width:1100px;">
+      <div class="text-center">
+        <div class="tag tag-rust mb-24">Key Innovation</div>
+        <h2>Cross-VM Architecture</h2>
+      </div>
+
+      <!-- Compact architecture diagram -->
+      <div style="display:flex;flex-direction:column;gap:0;align-items:center;margin-bottom:24px;">
+
+        <!-- Layer 1: Frontend -->
+        <div style="width:100%;max-width:900px;margin-bottom:2px;">
+          <div style="padding:14px 16px;border-radius:12px;background:rgba(230,0,122,0.06);border:1px solid rgba(230,0,122,0.2);text-align:center;">
+            <div style="font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--pink);margin-bottom:4px;">Frontend</div>
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text);">Next.js + wagmi</div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:3px;">Chat UI &middot; Bridge &middot; Portfolio &middot; History</div>
+          </div>
+        </div>
+
+        <div style="color:var(--dim);font-size:1rem;padding:6px 0;">&#x25BC;</div>
+
+        <!-- Layer 2: AI -->
+        <div style="width:100%;max-width:900px;">
+          <div style="padding:14px 16px;border-radius:12px;background:rgba(85,43,191,0.06);border:1px solid rgba(85,43,191,0.2);text-align:center;">
+            <div style="font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--purple);margin-bottom:4px;">AI Layer</div>
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text);">Claude AI &mdash; Intent Parser</div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:3px;">Natural language &rarr; structured intent</div>
+          </div>
+        </div>
+
+        <div style="color:var(--dim);font-size:1rem;padding:6px 0;">&#x25BC;</div>
+
+        <!-- Layer 3: EVM Smart Contracts - 3 in a row -->
+        <div style="width:100%;max-width:900px;">
+          <div style="text-align:center;margin-bottom:6px;">
+            <span style="font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--pink);">EVM &middot; Solidity</span>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:center;">
+            <div style="flex:1;padding:12px;border-radius:10px;background:rgba(230,0,122,0.06);border:1px solid rgba(230,0,122,0.2);text-align:center;">
+              <div style="font-size:0.8rem;font-weight:600;color:var(--text);">IntentExecutor</div>
+              <div style="font-size:0.6rem;color:var(--muted);margin-top:2px;">Routing &amp; execution</div>
+            </div>
+            <div style="flex:1;padding:12px;border-radius:10px;background:rgba(0,178,255,0.06);border:1px solid rgba(0,178,255,0.2);text-align:center;">
+              <div style="font-size:0.8rem;font-weight:600;color:var(--text);">MockDEX</div>
+              <div style="font-size:0.6rem;color:var(--muted);margin-top:2px;">AMM &amp; swap logic</div>
+            </div>
+            <div style="flex:1;padding:12px;border-radius:10px;background:rgba(255,214,0,0.06);border:1px solid rgba(255,214,0,0.2);text-align:center;">
+              <div style="font-size:0.8rem;font-weight:600;color:var(--text);">TokenFactory</div>
+              <div style="font-size:0.6rem;color:var(--muted);margin-top:2px;">ERC-20 deploy</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cross-VM arrow -->
+        <div style="text-align:center;padding:10px 0;">
+          <div style="color:var(--dim);font-size:1rem;">&#x25BC;</div>
+          <div style="font-size:0.55rem;font-weight:700;letter-spacing:0.12em;color:var(--rust);padding:4px 0;">CROSS-VM CALL</div>
+          <div style="color:var(--dim);font-size:1rem;">&#x25BC;</div>
+        </div>
+
+        <!-- Layer 4: PVM + XCM side by side -->
+        <div style="width:100%;max-width:900px;display:flex;gap:8px;">
+          <div style="flex:1;padding:14px 16px;border-radius:10px;background:rgba(222,165,132,0.06);border:1px solid rgba(222,165,132,0.3);text-align:center;">
+            <div style="font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--rust);margin-bottom:4px;">PVM &middot; Rust</div>
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text);">Risk Engine</div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:3px;">Price impact, volatility, liquidity analysis</div>
+          </div>
+          <div style="flex:1;padding:14px 16px;border-radius:10px;background:rgba(86,243,154,0.06);border:1px solid rgba(86,243,154,0.2);text-align:center;">
+            <div style="font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--green);margin-bottom:4px;">XCM</div>
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text);">Cross-Chain Bridge</div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:3px;">Transfer tokens between Polkadot chains</div>
+          </div>
+        </div>
+
+        <div style="color:var(--dim);font-size:1rem;padding:6px 0;">&#x25BC;</div>
+
+        <!-- Layer 5: Blockchain -->
+        <div style="width:100%;max-width:900px;">
+          <div style="padding:14px 16px;border-radius:12px;background:linear-gradient(135deg,rgba(230,0,122,0.04),rgba(222,165,132,0.04));border:1px solid rgba(230,0,122,0.15);text-align:center;">
+            <div style="font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--pink);margin-bottom:4px;">Blockchain</div>
+            <div style="font-size:0.85rem;font-weight:700;color:var(--text);">Polkadot Hub TestNet</div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:3px;">EVM + PVM &middot; ChainId 420420417</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 6: Roadmap ==================== -->
+  <div class="slide" data-slide="6">
+    <div class="orb" style="width:350px;height:350px;background:var(--purple);bottom:-80px;left:-80px;opacity:0.1;"></div>
+
+    <div style="width:100%;max-width:900px;">
+      <div class="text-center">
+        <div class="tag tag-pink mb-24">Roadmap</div>
+        <h2>What's next</h2>
+      </div>
+
+      <div class="roadmap-phase" style="border-bottom:1px solid var(--dim);">
+        <div class="phase-badge phase-now">v1</div>
+        <div>
+          <h3 style="color:var(--green);margin-bottom:8px;">Now</h3>
+          <div class="phase-items">
+            <span class="phase-item" data-tip="Rust smart contract on PolkaVM that scores every swap by price impact, MA20 deviation, and volatility. RED score = automatic revert.">Rust Risk Engine</span>
+            <span class="phase-item" data-tip="Transfer tokens between Polkadot chains via XCM Precompile. Natural language command → XCM teleport in one click.">XCM Cross-Chain Bridge</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="roadmap-phase" style="border-bottom:1px solid var(--dim);">
+        <div class="phase-badge phase-next">v2</div>
+        <div>
+          <h3 style="color:var(--pink);margin-bottom:8px;">Next</h3>
+          <div class="phase-items">
+            <span class="phase-item" data-tip="Analyze correlations between pools. If DOT/USDT drops but DOT/USDC doesn't — likely manipulation in one pool, not a real price move.">Multi-Pool Correlation</span>
+            <span class="phase-item" data-tip="Compare on-chain pool price with external oracle (Chainlink/DIA). Large deviation = pool is manipulated or stale. Extra safety signal.">Oracle Price Feeds</span>
+            <span class="phase-item" data-tip="Adaptive risk thresholds based on pool maturity. New pools with low liquidity get stricter limits; mature pools get more lenient scoring.">Dynamic Risk Thresholds</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="roadmap-phase">
+        <div class="phase-badge phase-future">v3</div>
+        <div>
+          <h3 style="color:var(--purple);margin-bottom:8px;">Future</h3>
+          <div class="phase-items">
+            <span class="phase-item" data-tip="Detect frontrunning and sandwich attacks on-chain. Risk Engine flags suspicious transaction ordering patterns and protects users automatically.">MEV Protection On-Chain</span>
+            <span class="phase-item" data-tip="Send risk scores to other parachains via XCM. Any chain can use our Risk Engine as a service — risk-as-a-service across Polkadot.">Cross-Chain Risk via XCM</span>
+            <span class="phase-item" data-tip="Move risk parameters (weights, thresholds) into on-chain governance. Community votes to adjust scoring without redeploying the contract.">Governance Risk Parameters</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE 7: Team & Contact ==================== -->
+  <div class="slide" data-slide="7">
+    <div class="orb" style="width:400px;height:400px;background:var(--pink);top:-120px;left:-120px;opacity:0.1;"></div>
+    <div class="orb" style="width:300px;height:300px;background:var(--cyan);bottom:-80px;right:-80px;opacity:0.1;"></div>
+
+    <div class="text-center max-w">
+      <div class="tag tag-pink mb-40">Team</div>
+
+      <!-- Avatar -->
+      <div style="width:120px;height:120px;border-radius:50%;margin:0 auto 24px;border:3px solid rgba(230,0,122,0.4);overflow:hidden;background:var(--surface);display:flex;align-items:center;justify-content:center;">
+        <div style="font-size:3rem;">&#x1F468;&#x200D;&#x1F4BB;</div>
+      </div>
+
+      <h2 style="margin-bottom:12px;">Pavel Malykh</h2>
+      <p style="font-size:1.1rem;color:var(--muted);margin-bottom:48px;">Web3 Builder</p>
+
+      <!-- Contact cards -->
+      <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+        <a href="https://github.com/PavelMal" target="_blank" style="text-decoration:none;">
+          <div class="card" style="padding:24px 40px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all 0.2s;border-color:rgba(255,255,255,0.15);">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            <div style="text-align:left;">
+              <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">GitHub</div>
+              <div style="font-size:1rem;font-weight:600;color:var(--text);">PavelMal</div>
+            </div>
+          </div>
+        </a>
+
+        <a href="https://t.me/PAULMAL" target="_blank" style="text-decoration:none;">
+          <div class="card" style="padding:24px 40px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all 0.2s;border-color:rgba(0,178,255,0.3);">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="#00B2FF"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            <div style="text-align:left;">
+              <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Telegram</div>
+              <div style="font-size:1rem;font-weight:600;color:#00B2FF;">@PAULMAL</div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <p style="margin-top:48px;font-size:1.3rem;font-weight:600;color:var(--text);">
+        Thank you!
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav" id="nav">
+  <button class="nav-btn" id="prev-btn">&larr;</button>
+  <div id="dots"></div>
+  <button class="nav-btn" id="next-btn">&rarr;</button>
+  <span class="nav-count" id="counter"></span>
+</div>
+
+<script>
+  const deck = document.getElementById('deck');
+  const slides = deck.querySelectorAll('.slide');
+  const dotsContainer = document.getElementById('dots');
+  const counter = document.getElementById('counter');
+  let current = 0;
+
+  // Build dots
+  slides.forEach((_, i) => {
+    const dot = document.createElement('span');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotsContainer.appendChild(dot);
+  });
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    dotsContainer.children[current].classList.remove('active');
+    current = (n + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    dotsContainer.children[current].classList.add('active');
+    counter.textContent = `${current + 1} / ${slides.length}`;
+
+    // Trigger solution animation on slide 2
+    if (current === 2) {
+      resetSolution();
+      setTimeout(runSolution, 400);
+    } else {
+      resetSolution();
+    }
+  }
+
+  document.getElementById('prev-btn').onclick = () => goTo(current - 1);
+  document.getElementById('next-btn').onclick = () => goTo(current + 1);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(current - 1); }
+  });
+
+  counter.textContent = `1 / ${slides.length}`;
+
+  // === Solution slide (slide 2) bridge demo animation ===
+  // ---- Dual demo engine ----
+  const DEMO_CONFIG = {
+    swap:   { text: 'Swap 100 DOT to USDT' },
+    bridge: { text: 'Bridge 20 PAS to Relay Chain' }
+  };
+
+  const demoState = { swap: { timer: null, running: false }, bridge: { timer: null, running: false } };
+  let activeDemo = null;
+
+  function showPhaseIn(app, phName) {
+    app.querySelectorAll('.sol-phase').forEach(p => p.classList.remove('show'));
+    app.querySelector(`[data-ph="${phName}"]`).classList.add('show');
+  }
+
+  function resetDemo(name) {
+    const s = demoState[name];
+    clearTimeout(s.timer);
+    s.running = false;
+    const app = document.getElementById('app-' + name);
+    app.querySelectorAll('.sol-phase').forEach(p => p.classList.remove('show'));
+    app.querySelector('.typed-text').textContent = '';
+    app.querySelector('.sol-cursor').style.display = 'inline-block';
+  }
+
+  function runDemo(name) {
+    const s = demoState[name];
+    if (s.running) return;
+    s.running = true;
+
+    // Dim the other
+    const other = name === 'swap' ? 'bridge' : 'swap';
+    resetDemo(other);
+    document.getElementById('app-' + other).classList.add('dimmed');
+    document.getElementById('app-' + other).classList.remove('active');
+    const app = document.getElementById('app-' + name);
+    app.classList.remove('dimmed');
+    app.classList.add('active');
+    activeDemo = name;
+
+    const typed = app.querySelector('.typed-text');
+    const cursor = app.querySelector('.sol-cursor');
+    const text = DEMO_CONFIG[name].text;
+
+    showPhaseIn(app, 'typing');
+    let i = 0;
+    function typeChar() {
+      if (i < text.length) {
+        typed.textContent += text[i]; i++;
+        s.timer = setTimeout(typeChar, 50 + Math.random() * 30);
+      } else {
+        cursor.style.display = 'none';
+        s.timer = setTimeout(() => {
+          showPhaseIn(app, 'thinking');
+          s.timer = setTimeout(() => {
+            showPhaseIn(app, 'preview');
+            s.timer = setTimeout(() => {
+              showPhaseIn(app, 'confirming');
+              s.timer = setTimeout(() => {
+                showPhaseIn(app, 'success');
+                s.timer = setTimeout(() => {
+                  s.running = false;
+                  // Auto-play: swap → bridge → swap → ...
+                  if (current === 2) runDemo(other);
+                }, 3000);
+              }, 2000);
+            }, 1500);
+          }, 2500);
+        }, 1500);
+      }
+    }
+    s.timer = setTimeout(typeChar, 300);
+  }
+
+  // Click to switch
+  document.getElementById('app-swap').addEventListener('click', () => {
+    if (activeDemo !== 'swap') { resetDemo('bridge'); runDemo('swap'); }
+  });
+  document.getElementById('app-bridge').addEventListener('click', () => {
+    if (activeDemo !== 'bridge') { resetDemo('swap'); runDemo('bridge'); }
+  });
+
+  function runSolution() { runDemo('swap'); }
+  function resetSolution() { resetDemo('swap'); resetDemo('bridge');
+    document.getElementById('app-swap').classList.remove('dimmed','active');
+    document.getElementById('app-bridge').classList.remove('dimmed','active');
+  }
+</script>
+
+</body>
+</html>

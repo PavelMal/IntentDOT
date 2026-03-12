@@ -2,6 +2,9 @@
 
 import { ConnectWallet } from "@/components/ConnectWallet";
 import { Chat } from "@/components/Chat";
+import { PortfolioDashboard } from "@/components/PortfolioDashboard";
+import { PoolInfo } from "@/components/PoolInfo";
+import { TransactionHistory } from "@/components/TransactionHistory";
 import { useAccount } from "wagmi";
 import { useState, useEffect } from "react";
 import { polkadotHubTestnet } from "@/lib/wagmi";
@@ -29,6 +32,9 @@ export default function ChatPage() {
           </Link>
         </div>
         <div className="flex items-center gap-2">
+          {mounted && isCorrectChain && <TransactionHistory />}
+          {mounted && isCorrectChain && <PoolInfo />}
+          {mounted && isCorrectChain && <PortfolioDashboard />}
           <ConnectWallet />
         </div>
       </header>
