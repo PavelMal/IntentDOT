@@ -54,7 +54,7 @@ export function Chat() {
   const { result: bridgeResult, executeBridge, reset: resetBridge } = useBridgeExecution();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const isSwapExecuting = swapResult.status === "approving" || swapResult.status === "executing" || swapResult.status === "approved";
+  const isSwapExecuting = swapResult.status === "signing" || swapResult.status === "approving" || swapResult.status === "executing" || swapResult.status === "approved";
   const isTransferExecuting = transferResult.status === "approving" || transferResult.status === "executing" || transferResult.status === "approved";
   const isCreateExecuting = createResult.status === "creating";
   const isBridgeExecuting = bridgeResult.status === "encoding" || bridgeResult.status === "weighing" || bridgeResult.status === "executing" || bridgeResult.status === "confirming";
@@ -495,11 +495,13 @@ export function Chat() {
   // --- Execution status text ---
   const getExecutionStatusText = () => {
     if (isSwapExecuting) {
-      return swapResult.status === "approving"
-        ? "Waiting for token approval..."
-        : swapResult.status === "approved"
-          ? "Token approved. Sending swap..."
-          : "Executing swap on-chain...";
+      return swapResult.status === "signing"
+        ? "Sign permit in wallet (gasless approval)..."
+        : swapResult.status === "approving"
+          ? "Waiting for token approval..."
+          : swapResult.status === "approved"
+            ? "Token approved. Sending swap..."
+            : "Executing swap on-chain...";
     }
     if (isTransferExecuting) {
       return transferResult.status === "approving"
