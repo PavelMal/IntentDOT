@@ -6,7 +6,7 @@ import { PortfolioDashboard } from "@/components/PortfolioDashboard";
 import { PoolInfo } from "@/components/PoolInfo";
 import { TransactionHistory } from "@/components/TransactionHistory";
 import { useAccount } from "wagmi";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { polkadotHubTestnet } from "@/lib/wagmi";
 import Link from "next/link";
 
@@ -16,6 +16,11 @@ export default function ChatPage() {
   useEffect(() => setMounted(true), []);
 
   const isCorrectChain = isConnected && chain?.id === polkadotHubTestnet.id;
+  const historyRefreshRef = useRef<(() => void) | null>(null);
+  const onTxSuccess = useCallback(() => {
+    // Small delay so the new tx has time to be indexed
+    setTimeout(() => historyRefreshRef.current?.(), 2000);
+  }, []);
 
   return (
     <main className="relative flex min-h-screen flex-col">
@@ -32,7 +37,7 @@ export default function ChatPage() {
           </Link>
         </div>
         <div className="flex items-center gap-2">
-          {mounted && isCorrectChain && <TransactionHistory />}
+          {mounted && isCorrectChain && <TransactionHistory externalRefreshRef={historyRefreshRef} />}
           {mounted && isCorrectChain && <PoolInfo />}
           {mounted && isCorrectChain && <PortfolioDashboard />}
           <ConnectWallet />
@@ -42,7 +47,7 @@ export default function ChatPage() {
       {/* Content */}
       {!mounted ? null : isCorrectChain ? (
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center p-6">
-          <Chat />
+          <Chat onTxSuccess={onTxSuccess} />
         </div>
       ) : isConnected ? (
         /* Wrong network */

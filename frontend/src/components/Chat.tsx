@@ -41,7 +41,7 @@ function loadMessages(): ChatMessage[] {
   return [WELCOME_MESSAGE];
 }
 
-export function Chat() {
+export function Chat({ onTxSuccess }: { onTxSuccess?: () => void } = {}) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const [messages, setMessages] = useState<ChatMessage[]>(loadMessages);
@@ -146,11 +146,12 @@ export function Chat() {
       setMessages((prev) => prev.filter((m) => m.preview !== preview));
       addMessage({ role: "receipt", content: "", receipt });
       resetSwap();
+      onTxSuccess?.();
     } else if (result.status === "error") {
       addMessage({ role: "assistant", content: `Swap failed: ${result.error}` });
       resetSwap();
     }
-  }, [addMessage, executeSwap, resetSwap, getExplorerUrl]);
+  }, [addMessage, executeSwap, resetSwap, getExplorerUrl, onTxSuccess]);
 
   // === TRANSFER CONFIRM ===
   const handleTransferConfirm = useCallback(async (preview: TransferPreview) => {
@@ -172,11 +173,12 @@ export function Chat() {
       setMessages((prev) => prev.filter((m) => m.transferPreview !== preview));
       addMessage({ role: "transfer-receipt", content: "", transferReceipt: receipt });
       resetTransfer();
+      onTxSuccess?.();
     } else if (result.status === "error") {
       addMessage({ role: "assistant", content: `Transfer failed: ${result.error}` });
       resetTransfer();
     }
-  }, [addMessage, executeTransfer, resetTransfer, getExplorerUrl]);
+  }, [addMessage, executeTransfer, resetTransfer, getExplorerUrl, onTxSuccess]);
 
   // === CREATE TOKEN CONFIRM ===
   const handleCreateConfirm = useCallback(async (preview: TokenCreatePreview) => {
@@ -199,11 +201,12 @@ export function Chat() {
       setMessages((prev) => prev.filter((m) => m.createPreview !== preview));
       addMessage({ role: "create-receipt", content: "", createReceipt: receipt });
       resetCreate();
+      onTxSuccess?.();
     } else if (result.status === "error") {
       addMessage({ role: "assistant", content: `Token creation failed: ${result.error}` });
       resetCreate();
     }
-  }, [addMessage, createToken, resetCreate, getExplorerUrl]);
+  }, [addMessage, createToken, resetCreate, getExplorerUrl, onTxSuccess]);
 
   // === BRIDGE CONFIRM ===
   const handleBridgeConfirm = useCallback(async (preview: BridgePreview) => {
@@ -227,11 +230,12 @@ export function Chat() {
       setMessages((prev) => prev.filter((m) => m.bridgePreview !== preview));
       addMessage({ role: "bridge-receipt", content: "", bridgeReceipt: receipt });
       resetBridge();
+      onTxSuccess?.();
     } else if (result.status === "error") {
       addMessage({ role: "assistant", content: `Bridge failed: ${result.error}` });
       resetBridge();
     }
-  }, [addMessage, executeBridge, resetBridge, getExplorerUrl, address]);
+  }, [addMessage, executeBridge, resetBridge, getExplorerUrl, address, onTxSuccess]);
 
   // === SUBMIT ===
   const sendMessage = async (text: string) => {
