@@ -644,7 +644,7 @@ export function Chat({ onTxSuccess }: { onTxSuccess?: () => void } = {}) {
             <button
               key={action.label}
               type="button"
-              onClick={() => sendMessage(action.text)}
+              onClick={() => setInput(action.text)}
               disabled={isLoading || isExecuting}
               className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-xs text-white/50 hover:text-white/80 hover:border-polkadot-pink/30 hover:bg-polkadot-pink/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
