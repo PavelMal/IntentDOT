@@ -350,6 +350,44 @@ contract IntentDOTTest is Test {
         );
     }
 
+    // === ERC20Permit / TransferWithPermit Tests ===
+
+    function test_transferWithPermit_happy_path() public {
+        dot.mint(alicePermit, 1_000 ether);
+        address bob = makeAddr("bob");
+
+        uint256 deadline = block.timestamp + 1 hours;
+        uint256 amount = 50 ether;
+
+        bytes32 digest = _getPermitDigest(dot, alicePermit, address(executor), amount, 0, deadline);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ALICE_PK, digest);
+
+        vm.prank(alicePermit);
+        executor.executeTransferWithPermit(
+            address(dot), bob, amount, deadline, v, r, s
+        );
+
+        assertEq(dot.balanceOf(bob), 50 ether, "Bob should receive 50 DOT");
+        assertEq(dot.balanceOf(alicePermit), 950 ether, "Alice should have 950 DOT");
+    }
+
+    function test_transferWithPermit_expired_deadline() public {
+        dot.mint(alicePermit, 1_000 ether);
+        address bob = makeAddr("bob");
+
+        uint256 deadline = block.timestamp - 1;
+        uint256 amount = 50 ether;
+
+        bytes32 digest = _getPermitDigest(dot, alicePermit, address(executor), amount, 0, deadline);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ALICE_PK, digest);
+
+        vm.prank(alicePermit);
+        vm.expectRevert();
+        executor.executeTransferWithPermit(
+            address(dot), bob, amount, deadline, v, r, s
+        );
+    }
+
     // === Factory Tests ===
 
     function test_factory_can_whitelist() public {

@@ -174,6 +174,27 @@ contract IntentExecutor is Ownable, ReentrancyGuard, Pausable {
         return true;
     }
 
+    /// @notice Gasless-approval transfer via EIP-2612 permit — one signature, one tx
+    function executeTransferWithPermit(
+        address token,
+        address recipient,
+        uint256 amount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external nonReentrant whenNotPaused onlyWhitelisted(token) returns (bool) {
+        IERC20Permit(token).permit(msg.sender, address(this), amount, deadline, v, r, s);
+        require(amount > 0, "IntentExecutor: zero amount");
+        require(recipient != address(0), "IntentExecutor: zero address");
+        require(recipient != msg.sender, "IntentExecutor: self transfer");
+
+        IERC20(token).safeTransferFrom(msg.sender, recipient, amount);
+
+        emit IntentExecuted(msg.sender, "transfer", token, recipient, amount, amount);
+        return true;
+    }
+
     /// @notice Preview swap output without executing
     function previewSwap(
         address tokenIn,
