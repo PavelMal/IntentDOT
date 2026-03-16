@@ -3,13 +3,14 @@
 import { useCallback, useState } from "react";
 import { useAccount, usePublicClient } from "wagmi";
 import { getWalletClient } from "wagmi/actions";
-import { parseEther, parseUnits, formatEther, formatUnits, isAddress, type Hash, type Address } from "viem";
+import { parseEther, parseUnits, formatEther, formatUnits, isAddress, parseSignature, type Hash, type Address } from "viem";
 import { config, polkadotHubTestnet } from "@/lib/wagmi";
 import { CONTRACTS, TOKEN_MAP } from "@/lib/contracts";
 import { mockERC20Abi, intentExecutorAbi } from "@/lib/abis";
 
 export type TransferStatus =
   | "idle"
+  | "signing"
   | "approving"
   | "approved"
   | "executing"
@@ -21,8 +22,13 @@ export interface TransferResult {
   approveTxHash?: Hash;
   executeTxHash?: Hash;
   error?: string;
+  usedPermit?: boolean;
 }
 
+/**
+ * Hook that handles the full transfer flow.
+ * Tries EIP-2612 permit (one tx) first, falls back to approve → transfer (two tx).
+ */
 export function useTransferExecution() {
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -53,7 +59,7 @@ export function useTransferExecution() {
       try {
         const walletClient = await getWalletClient(config);
 
-        // Native PAS transfer (no contract needed)
+        // Native PAS transfer (no contract needed, no permit)
         if (tokenSymbol === "PAS") {
           const amountWei = parseEther(amount.toString());
 
@@ -122,56 +128,144 @@ export function useTransferExecution() {
           return r;
         }
 
-        // Approve
-        setResult({ status: "approving" });
+        // --- Try EIP-2612 Permit flow (one tx) ---
+        let permitFailed = false;
+        try {
+          setResult({ status: "signing" });
 
-        const currentAllowance = await publicClient.readContract({
-          address: token.address,
-          abi: mockERC20Abi,
-          functionName: "allowance",
-          args: [address, executor],
-        });
+          const [tokenName, nonce] = await Promise.all([
+            publicClient.readContract({
+              address: token.address,
+              abi: mockERC20Abi,
+              functionName: "name",
+            }),
+            publicClient.readContract({
+              address: token.address,
+              abi: mockERC20Abi,
+              functionName: "nonces",
+              args: [address],
+            }),
+          ]);
 
-        let approveTxHash: Hash | undefined;
+          const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600); // 1 hour
 
-        if (currentAllowance < amountWei) {
-          approveTxHash = await walletClient.writeContract({
-            chain: polkadotHubTestnet,
-            address: token.address,
-            abi: mockERC20Abi,
-            functionName: "approve",
-            args: [executor, amountWei],
+          const signature = await walletClient.signTypedData({
+            domain: {
+              name: tokenName,
+              version: "1",
+              chainId: polkadotHubTestnet.id,
+              verifyingContract: token.address,
+            },
+            types: {
+              Permit: [
+                { name: "owner", type: "address" },
+                { name: "spender", type: "address" },
+                { name: "value", type: "uint256" },
+                { name: "nonce", type: "uint256" },
+                { name: "deadline", type: "uint256" },
+              ],
+            },
+            primaryType: "Permit",
+            message: {
+              owner: address,
+              spender: executor,
+              value: amountWei,
+              nonce,
+              deadline,
+            },
           });
-          await publicClient.waitForTransactionReceipt({ hash: approveTxHash });
+
+          const { v, r: sigR, s: sigS } = parseSignature(signature);
+
+          setResult({ status: "executing", usedPermit: true });
+
+          const executeTxHash = await walletClient.writeContract({
+            chain: polkadotHubTestnet,
+            address: executor,
+            abi: intentExecutorAbi,
+            functionName: "executeTransferWithPermit",
+            args: [token.address, recipient as Address, amountWei, deadline, Number(v), sigR, sigS],
+          });
+
+          const receipt = await publicClient.waitForTransactionReceipt({ hash: executeTxHash });
+
+          if (receipt.status !== "success") {
+            const r: TransferResult = {
+              status: "error",
+              executeTxHash,
+              error: "Transaction reverted on-chain.",
+            };
+            setResult(r);
+            return r;
+          }
+
+          const r: TransferResult = { status: "success", executeTxHash, usedPermit: true };
+          setResult(r);
+          return r;
+        } catch (permitErr: unknown) {
+          const msg = permitErr instanceof Error ? permitErr.message : "";
+          if (msg.includes("User rejected") || msg.includes("user rejected")) {
+            const r: TransferResult = { status: "error", error: "Transaction rejected by user" };
+            setResult(r);
+            return r;
+          }
+          console.warn("Permit flow failed, falling back to approve→transfer:", msg);
+          permitFailed = true;
         }
 
-        setResult({ status: "approved", approveTxHash });
+        // --- Fallback: approve → executeTransfer (two tx) ---
+        if (permitFailed) {
+          setResult({ status: "approving" });
 
-        // Execute transfer
-        setResult({ status: "executing", approveTxHash });
+          const currentAllowance = await publicClient.readContract({
+            address: token.address,
+            abi: mockERC20Abi,
+            functionName: "allowance",
+            args: [address, executor],
+          });
 
-        const executeTxHash = await walletClient.writeContract({
-          chain: polkadotHubTestnet,
-          address: executor,
-          abi: intentExecutorAbi,
-          functionName: "executeTransfer",
-          args: [token.address, recipient as Address, amountWei],
-        });
+          let approveTxHash: Hash | undefined;
 
-        const receipt = await publicClient.waitForTransactionReceipt({ hash: executeTxHash });
+          if (currentAllowance < amountWei) {
+            approveTxHash = await walletClient.writeContract({
+              chain: polkadotHubTestnet,
+              address: token.address,
+              abi: mockERC20Abi,
+              functionName: "approve",
+              args: [executor, amountWei],
+            });
+            await publicClient.waitForTransactionReceipt({ hash: approveTxHash });
+          }
 
-        if (receipt.status !== "success") {
-          const r: TransferResult = {
-            status: "error",
-            approveTxHash,
-            executeTxHash,
-            error: "Transaction reverted on-chain.",
-          };
+          setResult({ status: "executing", approveTxHash });
+
+          const executeTxHash = await walletClient.writeContract({
+            chain: polkadotHubTestnet,
+            address: executor,
+            abi: intentExecutorAbi,
+            functionName: "executeTransfer",
+            args: [token.address, recipient as Address, amountWei],
+          });
+
+          const receipt = await publicClient.waitForTransactionReceipt({ hash: executeTxHash });
+
+          if (receipt.status !== "success") {
+            const r: TransferResult = {
+              status: "error",
+              approveTxHash,
+              executeTxHash,
+              error: "Transaction reverted on-chain.",
+            };
+            setResult(r);
+            return r;
+          }
+
+          const r: TransferResult = { status: "success", approveTxHash, executeTxHash, usedPermit: false };
           setResult(r);
           return r;
         }
 
-        const r: TransferResult = { status: "success", approveTxHash, executeTxHash };
+        const r: TransferResult = { status: "error", error: "Unknown error" };
         setResult(r);
         return r;
       } catch (err: unknown) {

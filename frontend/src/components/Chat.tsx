@@ -55,7 +55,7 @@ export function Chat({ onTxSuccess }: { onTxSuccess?: () => void } = {}) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isSwapExecuting = swapResult.status === "signing" || swapResult.status === "approving" || swapResult.status === "executing" || swapResult.status === "approved";
-  const isTransferExecuting = transferResult.status === "approving" || transferResult.status === "executing" || transferResult.status === "approved";
+  const isTransferExecuting = transferResult.status === "signing" || transferResult.status === "approving" || transferResult.status === "executing" || transferResult.status === "approved";
   const isCreateExecuting = createResult.status === "creating";
   const isBridgeExecuting = bridgeResult.status === "encoding" || bridgeResult.status === "weighing" || bridgeResult.status === "executing" || bridgeResult.status === "confirming";
   const isExecuting = isSwapExecuting || isTransferExecuting || isCreateExecuting || isBridgeExecuting;
@@ -508,11 +508,13 @@ export function Chat({ onTxSuccess }: { onTxSuccess?: () => void } = {}) {
             : "Executing swap on-chain...";
     }
     if (isTransferExecuting) {
-      return transferResult.status === "approving"
-        ? "Waiting for token approval..."
-        : transferResult.status === "approved"
-          ? "Token approved. Sending transfer..."
-          : "Executing transfer on-chain...";
+      return transferResult.status === "signing"
+        ? "Sign permit in wallet (gasless approval)..."
+        : transferResult.status === "approving"
+          ? "Waiting for token approval..."
+          : transferResult.status === "approved"
+            ? "Token approved. Sending transfer..."
+            : "Executing transfer on-chain...";
     }
     if (isCreateExecuting) {
       return "Deploying token contract on-chain...";

@@ -179,6 +179,21 @@ export const intentExecutorAbi = [
     outputs: [{ name: "amountOut", type: "uint256" }],
   },
   {
+    name: "executeTransferWithPermit",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "recipient", type: "address" },
+      { name: "amount", type: "uint256" },
+      { name: "deadline", type: "uint256" },
+      { name: "v", type: "uint8" },
+      { name: "r", type: "bytes32" },
+      { name: "s", type: "bytes32" },
+    ],
+    outputs: [{ type: "bool" }],
+  },
+  {
     name: "owner",
     type: "function",
     stateMutability: "view",
