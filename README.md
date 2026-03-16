@@ -15,6 +15,7 @@ IntentDOT lets you execute DeFi operations on Polkadot by simply typing what you
 - **Natural Language DeFi** — Type "Swap 10 DOT to USDT" instead of navigating complex DEX UIs
 - **On-Chain Risk Engine (Rust/PolkaVM)** — Every swap validated by a Rust smart contract running natively on Polkadot. RED risk = transaction reverted automatically. [Details below](#on-chain-risk-engine)
 - **AI Risk Guardian** — Off-chain pre-check: scores slippage, liquidity, and pool drain before you confirm
+- **Gasless Approvals (EIP-2612)** — One-click swaps and transfers: sign a free off-chain permit instead of a separate approve tx
 - **Token Transfers** — "Send 50 USDT to 0x..." — direct token transfers via intent
 - **Token Factory** — "Create a token called PEPE with 1M supply" — deploy ERC20s from chat
 - **On-Chain Whitelist** — Only verified tokens can be swapped/transferred (security layer)
@@ -194,7 +195,7 @@ The core contract composes five OZ modules with domain-specific logic that doesn
 - `ReentrancyGuard` (`nonReentrant`) protects the multi-step approve→swap flow where the contract pulls tokens from the user, approves the DEX, executes the swap, and returns output tokens — four external calls in one transaction
 - `Pausable` (`whenNotPaused`) acts as an emergency circuit breaker across both `executeSwap()` and `executeTransfer()`. This is critical because the contract interacts with a **cross-VM Rust Risk Engine** (PolkaVM) — if the PVM contract misbehaves, the owner can halt all operations instantly
 - `SafeERC20` (`safeTransfer`, `safeTransferFrom`, `forceApprove`) wraps all token interactions to handle non-standard ERC20 implementations that don't return bool — a real production security concern
-- `IERC20Permit` enables **gasless approvals** via EIP-2612: `executeSwapWithPermit()` calls `permit()` then swaps in a single transaction — no separate approve tx needed. Perfect for AI intent UX: user signs once, swap executes
+- `IERC20Permit` enables **gasless approvals** via EIP-2612: `executeSwapWithPermit()` and `executeTransferWithPermit()` call `permit()` then execute in a single transaction — no separate approve tx needed. Perfect for AI intent UX: user signs once, operation executes
 - `Ownable` secures admin functions (`setRiskEngine`, `setFactory`, `pause`/`unpause`) while the custom `onlyWhitelisted` modifier enforces a token allowlist that neither OZ nor any standard provides — only pre-approved tokens can flow through the system
 - Custom `whitelistToken()` has a **dual-authority pattern**: both `owner()` (from OZ Ownable) and `factory` address can whitelist tokens, enabling automated token onboarding from TokenFactory while keeping manual control for the admin
 
@@ -210,6 +211,9 @@ IntentExecutor is Ownable, ReentrancyGuard, Pausable
 │   └── _doSwap()            → same swap logic, no prior approve needed
 │
 ├── executeTransfer()        [nonReentrant, whenNotPaused, onlyWhitelisted]
+├── executeTransferWithPermit() [nonReentrant, whenNotPaused, onlyWhitelisted]
+│   ├── permit()             → EIP-2612 gasless approval (off-chain signature)
+│   └── safeTransferFrom()   → same transfer logic, no prior approve needed
 ├── pause()/unpause()        [onlyOwner] — emergency stop
 ├── setRiskEngine()          [onlyOwner] — plug/unplug PVM risk oracle
 ├── setFactory()             [onlyOwner] — authorize TokenFactory
@@ -227,7 +231,7 @@ Goes beyond simple Ownable by using role-based permissions:
 
 **MockERC20** — `ERC20` + `ERC20Burnable` + `ERC20Permit` + `Ownable`
 
-Tokens are OZ ERC20 with restricted minting (`onlyOwner`), burn support, and **EIP-2612 permit** for gasless approvals. The `Ownable` constraint on `mint()` is what makes the TokenFactory pattern secure — only the deployer (factory) can mint the initial supply, preventing inflation attacks. `ERC20Permit` enables the `executeSwapWithPermit()` flow — users sign a typed-data message off-chain (free, no gas), and the executor contract handles approval + swap in one transaction.
+Tokens are OZ ERC20 with restricted minting (`onlyOwner`), burn support, and **EIP-2612 permit** for gasless approvals. The `Ownable` constraint on `mint()` is what makes the TokenFactory pattern secure — only the deployer (factory) can mint the initial supply, preventing inflation attacks. `ERC20Permit` enables the `executeSwapWithPermit()` and `executeTransferWithPermit()` flows — users sign a typed-data message off-chain (free, no gas), and the executor contract handles approval + operation in one transaction.
 
 ### Library Dependencies
 
@@ -286,7 +290,7 @@ Tokens are OZ ERC20 with restricted minting (`onlyOwner`), burn support, and **E
 | USDT Token | `0x152A1523096f6C34B104a3401aDcBA01B2cd80b4` |
 | USDC Token | `0x3140615Ed902E20c92d70395E6Af855325C4106f` |
 | MockDEX | `0x91F2d00CdC18Ab7B9E834356065C3353F800099c` |
-| IntentExecutor V4 | `0x616220E74386ff4AC840bCDE3A669897461A26dF` |
+| IntentExecutor V5 | `0x3A1E9DbCd16c7287b56F952EC3e9b3d238ECB75B` |
 | TokenFactory | `0x295e2B44e6251ab4E0450af4f162C772666a26f3` |
 | RiskEngine (PVM Rust) | `0x20c0dF8e93A0c400b7b36f699101972712ad7f9F` |
 
