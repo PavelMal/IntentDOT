@@ -260,12 +260,16 @@ export function useSwapExecution() {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Unknown error";
         const friendlyMsg = message.includes("User rejected")
-          ? "Transaction rejected by user"
+          ? "Transaction rejected by user."
           : message.includes("insufficient funds")
-            ? "Insufficient funds for gas"
-            : message.length > 200
-              ? message.slice(0, 200) + "..."
-              : message;
+            ? "Insufficient funds for gas. Top up your PAS balance."
+            : message.includes("Timed out")
+              ? "Transaction is taking longer than expected. It may still go through — check your history in a moment."
+              : message.includes("reverted")
+                ? "Transaction failed on-chain. Please try again."
+                : message.includes("nonce")
+                  ? "Transaction conflict. Please wait a moment and try again."
+                  : "Something went wrong. Please try again.";
 
         const r: SwapResult = { status: "error", error: friendlyMsg };
         setResult(r);
