@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/MockERC20.sol";
@@ -94,7 +94,10 @@ contract RiskEngineIntegrationTest is Test {
 
     function test_setRiskEngine_only_owner() public {
         vm.prank(alice);
-        vm.expectRevert("IntentExecutor: not owner");
+        vm.expectRevert(abi.encodeWithSelector(
+            bytes4(keccak256("OwnableUnauthorizedAccount(address)")),
+            alice
+        ));
         executor.setRiskEngine(address(riskEngine));
     }
 

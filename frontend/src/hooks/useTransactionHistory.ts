@@ -42,6 +42,10 @@ function fmtAmount(value: bigint): string {
   return num.toFixed(2);
 }
 
+// Simple in-memory cache for Blockscout to avoid 429
+let blockscoutCache: { entries: HistoryEntry[]; ts: number; addr: string } | null = null;
+const BLOCKSCOUT_TTL = 30_000; // 30s
+
 export function useTransactionHistory() {
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -82,14 +86,16 @@ export function useTransactionHistory() {
       } catch { /* IntentExecuted fetch failed — continue */ }
 
       try {
+        // Fetch all TokenCreated and filter client-side (some RPCs don't support indexed topic filters)
         const tokenLogs = await publicClient.getLogs({
           address: CONTRACTS.tokenFactory as Address,
           event: TOKEN_CREATED_EVENT,
-          args: { creator: address },
           fromBlock,
           toBlock: "latest",
         });
         for (const log of tokenLogs) {
+          const creator = (log.args.creator as string)?.toLowerCase();
+          if (creator !== address.toLowerCase()) continue;
           items.push({
             txHash: log.transactionHash,
             blockNumber: log.blockNumber,
@@ -103,29 +109,38 @@ export function useTransactionHistory() {
       } catch { /* TokenCreated fetch failed — continue */ }
 
       // Fetch bridge txs via Blockscout API (XCM precompile emits no custom events)
-      try {
-        const res = await fetch(
-          `https://blockscout-testnet.polkadot.io/api?module=account&action=txlist&address=${address}&filter_by=from&sort=desc&page=1&offset=50`
-        );
-        const json = await res.json();
-        if (json.status === "1" && Array.isArray(json.result)) {
-          const xcmAddr = XCM_PRECOMPILE.toLowerCase();
-          for (const tx of json.result) {
-            if (tx.to?.toLowerCase() !== xcmAddr) continue;
-            if (tx.isError === "1" || tx.txreceipt_status === "0") continue;
-            const valueBig = BigInt(tx.value || "0");
-            items.push({
-              txHash: tx.hash,
-              blockNumber: BigInt(tx.blockNumber),
-              intentType: "bridge",
-              tokenIn: "PAS",
-              tokenOut: "Relay Chain",
-              amountIn: valueBig > 0n ? fmtAmount(valueBig) : "",
-              amountOut: "",
-            });
+      // Uses in-memory cache to avoid 429 rate limiting
+      const now = Date.now();
+      if (blockscoutCache && blockscoutCache.addr === address && now - blockscoutCache.ts < BLOCKSCOUT_TTL) {
+        items.push(...blockscoutCache.entries);
+      } else {
+        try {
+          const res = await fetch(
+            `https://blockscout-testnet.polkadot.io/api?module=account&action=txlist&address=${address}&filter_by=from&sort=desc&page=1&offset=50`
+          );
+          const json = await res.json();
+          const bridgeItems: HistoryEntry[] = [];
+          if (json.status === "1" && Array.isArray(json.result)) {
+            const xcmAddr = XCM_PRECOMPILE.toLowerCase();
+            for (const tx of json.result) {
+              if (tx.to?.toLowerCase() !== xcmAddr) continue;
+              if (tx.isError === "1" || tx.txreceipt_status === "0") continue;
+              const valueBig = BigInt(tx.value || "0");
+              bridgeItems.push({
+                txHash: tx.hash,
+                blockNumber: BigInt(tx.blockNumber),
+                intentType: "bridge",
+                tokenIn: "PAS",
+                tokenOut: "Relay Chain",
+                amountIn: valueBig > 0n ? fmtAmount(valueBig) : "",
+                amountOut: "",
+              });
+            }
           }
-        }
-      } catch { /* Blockscout API may be unavailable */ }
+          blockscoutCache = { entries: bridgeItems, ts: now, addr: address };
+          items.push(...bridgeItems);
+        } catch { /* Blockscout API may be unavailable */ }
+      }
 
       // Sort by block number descending (most recent first)
       items.sort((a, b) => (b.blockNumber > a.blockNumber ? 1 : b.blockNumber < a.blockNumber ? -1 : 0));

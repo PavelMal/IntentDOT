@@ -134,9 +134,14 @@ export function PoolInfo() {
             <div className="space-y-4">
               {POOLS.map((pool, i) => {
                 const result = data?.[i]?.result as [string, string, bigint, bigint] | undefined;
+                const token0 = result?.[0]?.toLowerCase();
                 const r0 = result?.[2];
                 const r1 = result?.[3];
-                const p = poolPrice(r0, r1);
+                // getPool sorts by address — figure out which reserve is DOT vs quote
+                const isDotToken0 = token0 === pool.tokenA.toLowerCase();
+                const dotReserve = isDotToken0 ? r0 : r1;
+                const quoteReserve = isDotToken0 ? r1 : r0;
+                const p = poolPrice(dotReserve, quoteReserve);
                 const prices = priceHistory[pool.name] || [];
 
                 return (
@@ -144,7 +149,7 @@ export function PoolInfo() {
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium text-white/60">{pool.name}</span>
                       <span className="text-[10px] text-white/25">
-                        {fmtReserve(r0)} DOT / {fmtReserve(r1)} {pool.quote}
+                        {fmtReserve(dotReserve)} DOT / {fmtReserve(quoteReserve)} {pool.quote}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">

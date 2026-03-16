@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/MockERC20.sol";
@@ -21,6 +21,9 @@ contract TokenFactoryTest is Test {
         executor = new IntentExecutor(address(dex));
         factory = new TokenFactory(address(executor));
         executor.setFactory(address(factory));
+
+        // Grant alice the CREATOR_ROLE
+        factory.grantRole(factory.CREATOR_ROLE(), alice);
     }
 
     function test_createToken() public {
@@ -79,5 +82,13 @@ contract TokenFactoryTest is Test {
         vm.prank(alice);
         vm.expectRevert("TokenFactory: invalid symbol");
         factory.createToken("PEPE", "", 1_000 ether);
+    }
+
+    function test_createToken_reverts_no_role() public {
+        address bob = makeAddr("bob");
+        vm.startPrank(bob);
+        vm.expectRevert();
+        factory.createToken("PEPE", "PEPE", 1_000 ether);
+        vm.stopPrank();
     }
 }

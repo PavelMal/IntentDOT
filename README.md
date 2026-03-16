@@ -15,6 +15,7 @@ IntentDOT lets you execute DeFi operations on Polkadot by simply typing what you
 - **Natural Language DeFi** — Type "Swap 10 DOT to USDT" instead of navigating complex DEX UIs
 - **On-Chain Risk Engine (Rust/PolkaVM)** — Every swap validated by a Rust smart contract running natively on Polkadot. RED risk = transaction reverted automatically. [Details below](#on-chain-risk-engine)
 - **AI Risk Guardian** — Off-chain pre-check: scores slippage, liquidity, and pool drain before you confirm
+- **Gasless Approvals (EIP-2612)** — One-click swaps and transfers: sign a free off-chain permit instead of a separate approve tx
 - **Token Transfers** — "Send 50 USDT to 0x..." — direct token transfers via intent
 - **Token Factory** — "Create a token called PEPE with 1M supply" — deploy ERC20s from chat
 - **On-Chain Whitelist** — Only verified tokens can be swapped/transferred (security layer)
@@ -103,7 +104,7 @@ The app connects to already deployed contracts on Polkadot Hub TestNet — no lo
 ### 4. Run Tests
 
 ```bash
-# Contract tests (38 tests)
+# Contract tests (48 tests)
 cd contracts
 forge install
 forge test -vvv
@@ -131,7 +132,7 @@ forge script script/Deploy.s.sol \
 |-------|-----------|
 | Frontend | Next.js 14, Tailwind CSS, wagmi v2, [w3wallets](https://github.com/Maksandre/w3wallets) + Playwright (E2E) |
 | AI | Anthropic Claude / OpenAI GPT-4o (structured output) |
-| Contracts | Solidity 0.8.19, Foundry (nightly) |
+| Contracts | Solidity 0.8.24, Foundry (nightly), OpenZeppelin 5.x |
 | PVM | Rust `no_std` + polkavm 0.26.0 → PolkaVM RISC-V bytecode |
 | Network | Polkadot Hub TestNet (chain 420420417) |
 
@@ -181,26 +182,118 @@ Each pool (e.g. DOT/USDT, DOT/USDC) has its own price history stored in contract
 - **Interface:** Standard Solidity ABI — `evaluate()` and `getStats()` callable from any EVM contract
 - **Storage:** Per-pool ring buffer (20 slots), index, trade count — all keyed by pool ID
 
+## OpenZeppelin Integration
+
+IntentDOT uses [OpenZeppelin Contracts 5.x](https://docs.openzeppelin.com/contracts/5.x/) not as a boilerplate token deploy, but as **composable security primitives layered into a multi-contract DeFi system** with custom application logic on top.
+
+### Contract Architecture & Customizations
+
+**IntentExecutor** — `Ownable` + `ReentrancyGuard` + `Pausable` + `SafeERC20` + `IERC20Permit` + custom modifiers
+
+The core contract composes five OZ modules with domain-specific logic that doesn't exist in any workshop template:
+
+- `ReentrancyGuard` (`nonReentrant`) protects the multi-step approve→swap flow where the contract pulls tokens from the user, approves the DEX, executes the swap, and returns output tokens — four external calls in one transaction
+- `Pausable` (`whenNotPaused`) acts as an emergency circuit breaker across both `executeSwap()` and `executeTransfer()`. This is critical because the contract interacts with a **cross-VM Rust Risk Engine** (PolkaVM) — if the PVM contract misbehaves, the owner can halt all operations instantly
+- `SafeERC20` (`safeTransfer`, `safeTransferFrom`, `forceApprove`) wraps all token interactions to handle non-standard ERC20 implementations that don't return bool — a real production security concern
+- `IERC20Permit` enables **gasless approvals** via EIP-2612: `executeSwapWithPermit()` and `executeTransferWithPermit()` call `permit()` then execute in a single transaction — no separate approve tx needed. Perfect for AI intent UX: user signs once, operation executes
+- `Ownable` secures admin functions (`setRiskEngine`, `setFactory`, `pause`/`unpause`) while the custom `onlyWhitelisted` modifier enforces a token allowlist that neither OZ nor any standard provides — only pre-approved tokens can flow through the system
+- Custom `whitelistToken()` has a **dual-authority pattern**: both `owner()` (from OZ Ownable) and `factory` address can whitelist tokens, enabling automated token onboarding from TokenFactory while keeping manual control for the admin
+
+```
+IntentExecutor is Ownable, ReentrancyGuard, Pausable
+│   using SafeERC20 for IERC20
+│
+├── executeSwap()            [nonReentrant, whenNotPaused, onlyWhitelisted×2]
+│   └── _doSwap()            → risk check → safeTransferFrom → forceApprove → DEX swap → safeTransfer
+│
+├── executeSwapWithPermit()  [nonReentrant, whenNotPaused, onlyWhitelisted×2]
+│   ├── permit()             → EIP-2612 gasless approval (off-chain signature)
+│   └── _doSwap()            → same swap logic, no prior approve needed
+│
+├── executeTransfer()        [nonReentrant, whenNotPaused, onlyWhitelisted]
+├── executeTransferWithPermit() [nonReentrant, whenNotPaused, onlyWhitelisted]
+│   ├── permit()             → EIP-2612 gasless approval (off-chain signature)
+│   └── safeTransferFrom()   → same transfer logic, no prior approve needed
+├── pause()/unpause()        [onlyOwner] — emergency stop
+├── setRiskEngine()          [onlyOwner] — plug/unplug PVM risk oracle
+├── setFactory()             [onlyOwner] — authorize TokenFactory
+└── whitelistToken()         [owner OR factory] — dual-authority pattern
+```
+
+**TokenFactory** — `AccessControl` with `CREATOR_ROLE`
+
+Goes beyond simple Ownable by using role-based permissions:
+
+- `CREATOR_ROLE` — required to deploy new tokens. Separates "who can create tokens" from "who administers the factory"
+- `DEFAULT_ADMIN_ROLE` — can grant/revoke `CREATOR_ROLE` to other addresses
+- The factory deploys `MockERC20` (OZ ERC20), calls `mint()` on the new token (allowed because factory is the deployer/owner), then auto-whitelists via IntentExecutor's dual-authority `whitelistToken()`
+- This creates a **cross-contract permission chain**: AccessControl (factory) → Ownable (new token) → dual-auth whitelist (executor)
+
+**MockERC20** — `ERC20` + `ERC20Burnable` + `ERC20Permit` + `Ownable`
+
+Tokens are OZ ERC20 with restricted minting (`onlyOwner`), burn support, and **EIP-2612 permit** for gasless approvals. The `Ownable` constraint on `mint()` is what makes the TokenFactory pattern secure — only the deployer (factory) can mint the initial supply, preventing inflation attacks. `ERC20Permit` enables the `executeSwapWithPermit()` and `executeTransferWithPermit()` flows — users sign a typed-data message off-chain (free, no gas), and the executor contract handles approval + operation in one transaction.
+
+### Library Dependencies
+
+```
+@openzeppelin/contracts v5.1.0
+├── access/Ownable.sol                       → IntentExecutor, MockERC20
+├── access/AccessControl.sol                 → TokenFactory
+├── utils/ReentrancyGuard.sol                → IntentExecutor
+├── utils/Pausable.sol                       → IntentExecutor
+├── token/ERC20/ERC20.sol                    → MockERC20
+├── token/ERC20/extensions/ERC20Burnable.sol → MockERC20
+├── token/ERC20/extensions/ERC20Permit.sol   → MockERC20 (EIP-2612 gasless approvals)
+├── token/ERC20/extensions/IERC20Permit.sol  → IntentExecutor (permit interface)
+├── token/ERC20/IERC20.sol                   → IntentExecutor, MockDEX
+└── token/ERC20/utils/SafeERC20.sol          → IntentExecutor, MockDEX
+```
+
+### What's custom (not from OZ)
+
+- **Token whitelist** with dual-authority (owner + factory) — no OZ equivalent
+- **Cross-VM risk check** — IntentExecutor calls a Rust/PolkaVM contract before every swap
+- **AMM routing** — IntentExecutor reads pool reserves, routes through MockDEX
+- **Intent parsing** — AI frontend parses natural language into contract calls
+
+### Test Coverage
+
+48 Foundry tests verify the full integration, including 11 OZ-specific tests:
+
+| Test | Verifies |
+|------|----------|
+| `test_pause_blocks_swap` | `Pausable` — swap reverts with `EnforcedPause()` when paused |
+| `test_pause_blocks_transfer` | `Pausable` — transfer reverts when paused |
+| `test_unpause_resumes_swap` | `Pausable` — operations resume after `unpause()` |
+| `test_non_owner_cannot_pause` | `Ownable` — reverts with `OwnableUnauthorizedAccount` |
+| `test_createToken_reverts_no_role` | `AccessControl` — reverts with `AccessControlUnauthorizedAccount` |
+| `test_swapWithPermit_happy_path` | `ERC20Permit` — full permit→swap in one tx, no prior approve |
+| `test_swapWithPermit_expired_deadline` | `ERC20Permit` — expired deadline reverts |
+| `test_swapWithPermit_wrong_signer` | `ERC20Permit` — invalid signature reverts |
+| `test_swapWithPermit_replay_reverts` | `ERC20Permit` — nonce consumed, replay blocked |
+| `test_transferWithPermit_happy_path` | `ERC20Permit` — full permit→transfer in one tx, no prior approve |
+| `test_transferWithPermit_expired_deadline` | `ERC20Permit` — expired deadline reverts for transfers |
+
 ## Smart Contracts
 
 | Contract | Description |
 |----------|-------------|
-| **IntentExecutor** | Entry point: executeSwap, executeTransfer, token whitelist, risk check |
+| **IntentExecutor** | Entry point: executeSwap, executeSwapWithPermit, executeTransfer, executeTransferWithPermit, token whitelist, risk check. OZ Ownable + ReentrancyGuard + Pausable + SafeERC20 + ERC20Permit |
 | **RiskEngine** | Rust/PolkaVM: on-chain risk scoring (price impact, MA20, volatility) |
 | **MockDEX** | Uniswap V2 AMM: addLiquidity, swap, getAmountOut |
-| **MockERC20** | Simple ERC20 with mint (testnet only) |
-| **TokenFactory** | Deploy new ERC20 tokens, auto-whitelist, mint to creator |
+| **MockERC20** | OZ ERC20 + ERC20Burnable + ERC20Permit + Ownable — mintable by owner, gasless approvals (testnet only) |
+| **TokenFactory** | Deploy new ERC20 tokens, auto-whitelist. OZ AccessControl (CREATOR_ROLE) |
 
 ## Deployed Contracts (Polkadot Hub TestNet)
 
 | Contract | Address |
 |----------|---------|
-| DOT Token | `0x0Fb72340AA780c00823E0a80429327af63E8d2Fc` |
-| USDT Token | `0x12e41FDB22Bc661719B4D7445952e1b51C429dDB` |
-| USDC Token | `0x540De5E6237395b63cFd9C383C47F5F32FAb3123` |
-| MockDEX | `0x5b2810428f3DA3400f111f516560EE63d44c336A` |
-| IntentExecutor V3 | `0xdD44bd254dD0bBB6Bfe7C7C062aDA4150e1546d7` |
-| TokenFactory | `0x1Ba4FDBab1C786Bd0aE8c4105711b90dDf87FCDD` |
+| DOT Token | `0x6e824774C36cdF88D323419A29cB9F92090C5d8f` |
+| USDT Token | `0x152A1523096f6C34B104a3401aDcBA01B2cd80b4` |
+| USDC Token | `0x3140615Ed902E20c92d70395E6Af855325C4106f` |
+| MockDEX | `0x91F2d00CdC18Ab7B9E834356065C3353F800099c` |
+| IntentExecutor V5 | `0x3A1E9DbCd16c7287b56F952EC3e9b3d238ECB75B` |
+| TokenFactory | `0x295e2B44e6251ab4E0450af4f162C772666a26f3` |
 | RiskEngine (PVM Rust) | `0x20c0dF8e93A0c400b7b36f699101972712ad7f9F` |
 
 **Network:** Polkadot Hub TestNet (Paseo)
@@ -226,9 +319,9 @@ Built for **Polkadot Solidity Hackathon 2026** (EVM Smart Contracts + PVM Smart 
 
 ## Tests
 
-- **Contracts:** 38 Foundry tests — swap (9), whitelist (5), transfer (4), factory (7), risk engine (12), events
+- **Contracts:** 48 Foundry tests — swap (9), permit (6), whitelist (5), transfer (4), pausable (4), factory (8), risk engine (11), events
 - **Frontend:** 185 Jest tests — intent validation (47), risk scoring (22), preview builder (25), risk display (28), XCM encoder (15), bridge flow (12), integration (12), E2E testnet (24)
-- **Total:** 223 tests (38 contract + 185 frontend/E2E)
+- **Total:** 233 tests (48 contract + 185 frontend/E2E)
 - Run: `cd contracts && forge test -vvv` / `cd frontend && npm test`
 
 ## License

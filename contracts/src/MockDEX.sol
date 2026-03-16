@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.24;
 
-import "./MockERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title MockDEX — Uniswap V2 style constant-product AMM
-/// @dev Single pool per token pair. Testnet only.
+/// @dev Single pool per token pair. Testnet only. Uses OZ SafeERC20 for safe token transfers.
 contract MockDEX {
+    using SafeERC20 for IERC20;
     struct Pool {
         address token0;
         address token1;
@@ -43,8 +45,8 @@ contract MockDEX {
         }
 
         // Transfer tokens in
-        MockERC20(tokenA).transferFrom(msg.sender, address(this), amountA);
-        MockERC20(tokenB).transferFrom(msg.sender, address(this), amountB);
+        IERC20(tokenA).safeTransferFrom(msg.sender, address(this), amountA);
+        IERC20(tokenB).safeTransferFrom(msg.sender, address(this), amountB);
 
         // Update reserves
         if (tokenA == pool.token0) {
@@ -92,10 +94,10 @@ contract MockDEX {
         Pool storage pool = pools[key];
 
         // Transfer tokenIn from user
-        MockERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
 
         // Transfer tokenOut to user
-        MockERC20(tokenOut).transfer(msg.sender, amountOut);
+        IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
 
         // Update reserves
         if (tokenIn == pool.token0) {

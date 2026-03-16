@@ -5,8 +5,14 @@ import { useTransactionHistory } from "@/hooks/useTransactionHistory";
 
 const EXPLORER = "https://blockscout-testnet.polkadot.io/tx/";
 
-export function TransactionHistory() {
+export function TransactionHistory({ externalRefreshRef }: { externalRefreshRef?: React.MutableRefObject<(() => void) | null> }) {
   const { entries, loading, refresh } = useTransactionHistory();
+
+  // Expose refresh to parent so Chat can trigger it after swap/transfer
+  useEffect(() => {
+    if (externalRefreshRef) externalRefreshRef.current = refresh;
+    return () => { if (externalRefreshRef) externalRefreshRef.current = null; };
+  }, [externalRefreshRef, refresh]);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 

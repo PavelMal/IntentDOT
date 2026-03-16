@@ -41,7 +41,7 @@ function loadMessages(): ChatMessage[] {
   return [WELCOME_MESSAGE];
 }
 
-export function Chat() {
+export function Chat({ onTxSuccess }: { onTxSuccess?: () => void } = {}) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const [messages, setMessages] = useState<ChatMessage[]>(loadMessages);
@@ -54,8 +54,8 @@ export function Chat() {
   const { result: bridgeResult, executeBridge, reset: resetBridge } = useBridgeExecution();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const isSwapExecuting = swapResult.status === "approving" || swapResult.status === "executing" || swapResult.status === "approved";
-  const isTransferExecuting = transferResult.status === "approving" || transferResult.status === "executing" || transferResult.status === "approved";
+  const isSwapExecuting = swapResult.status === "signing" || swapResult.status === "approving" || swapResult.status === "executing" || swapResult.status === "approved";
+  const isTransferExecuting = transferResult.status === "signing" || transferResult.status === "approving" || transferResult.status === "executing" || transferResult.status === "approved";
   const isCreateExecuting = createResult.status === "creating";
   const isBridgeExecuting = bridgeResult.status === "encoding" || bridgeResult.status === "weighing" || bridgeResult.status === "executing" || bridgeResult.status === "confirming";
   const isExecuting = isSwapExecuting || isTransferExecuting || isCreateExecuting || isBridgeExecuting;
@@ -146,11 +146,12 @@ export function Chat() {
       setMessages((prev) => prev.filter((m) => m.preview !== preview));
       addMessage({ role: "receipt", content: "", receipt });
       resetSwap();
+      onTxSuccess?.();
     } else if (result.status === "error") {
       addMessage({ role: "assistant", content: `Swap failed: ${result.error}` });
       resetSwap();
     }
-  }, [addMessage, executeSwap, resetSwap, getExplorerUrl]);
+  }, [addMessage, executeSwap, resetSwap, getExplorerUrl, onTxSuccess]);
 
   // === TRANSFER CONFIRM ===
   const handleTransferConfirm = useCallback(async (preview: TransferPreview) => {
@@ -172,11 +173,12 @@ export function Chat() {
       setMessages((prev) => prev.filter((m) => m.transferPreview !== preview));
       addMessage({ role: "transfer-receipt", content: "", transferReceipt: receipt });
       resetTransfer();
+      onTxSuccess?.();
     } else if (result.status === "error") {
       addMessage({ role: "assistant", content: `Transfer failed: ${result.error}` });
       resetTransfer();
     }
-  }, [addMessage, executeTransfer, resetTransfer, getExplorerUrl]);
+  }, [addMessage, executeTransfer, resetTransfer, getExplorerUrl, onTxSuccess]);
 
   // === CREATE TOKEN CONFIRM ===
   const handleCreateConfirm = useCallback(async (preview: TokenCreatePreview) => {
@@ -199,11 +201,12 @@ export function Chat() {
       setMessages((prev) => prev.filter((m) => m.createPreview !== preview));
       addMessage({ role: "create-receipt", content: "", createReceipt: receipt });
       resetCreate();
+      onTxSuccess?.();
     } else if (result.status === "error") {
       addMessage({ role: "assistant", content: `Token creation failed: ${result.error}` });
       resetCreate();
     }
-  }, [addMessage, createToken, resetCreate, getExplorerUrl]);
+  }, [addMessage, createToken, resetCreate, getExplorerUrl, onTxSuccess]);
 
   // === BRIDGE CONFIRM ===
   const handleBridgeConfirm = useCallback(async (preview: BridgePreview) => {
@@ -227,11 +230,12 @@ export function Chat() {
       setMessages((prev) => prev.filter((m) => m.bridgePreview !== preview));
       addMessage({ role: "bridge-receipt", content: "", bridgeReceipt: receipt });
       resetBridge();
+      onTxSuccess?.();
     } else if (result.status === "error") {
       addMessage({ role: "assistant", content: `Bridge failed: ${result.error}` });
       resetBridge();
     }
-  }, [addMessage, executeBridge, resetBridge, getExplorerUrl, address]);
+  }, [addMessage, executeBridge, resetBridge, getExplorerUrl, address, onTxSuccess]);
 
   // === SUBMIT ===
   const sendMessage = async (text: string) => {
@@ -495,18 +499,22 @@ export function Chat() {
   // --- Execution status text ---
   const getExecutionStatusText = () => {
     if (isSwapExecuting) {
-      return swapResult.status === "approving"
-        ? "Waiting for token approval..."
-        : swapResult.status === "approved"
-          ? "Token approved. Sending swap..."
-          : "Executing swap on-chain...";
+      return swapResult.status === "signing"
+        ? "Sign permit in wallet (gasless approval)..."
+        : swapResult.status === "approving"
+          ? "Waiting for token approval..."
+          : swapResult.status === "approved"
+            ? "Token approved. Sending swap..."
+            : "Executing swap on-chain...";
     }
     if (isTransferExecuting) {
-      return transferResult.status === "approving"
-        ? "Waiting for token approval..."
-        : transferResult.status === "approved"
-          ? "Token approved. Sending transfer..."
-          : "Executing transfer on-chain...";
+      return transferResult.status === "signing"
+        ? "Sign permit in wallet (gasless approval)..."
+        : transferResult.status === "approving"
+          ? "Waiting for token approval..."
+          : transferResult.status === "approved"
+            ? "Token approved. Sending transfer..."
+            : "Executing transfer on-chain...";
     }
     if (isCreateExecuting) {
       return "Deploying token contract on-chain...";
@@ -636,7 +644,7 @@ export function Chat() {
             <button
               key={action.label}
               type="button"
-              onClick={() => sendMessage(action.text)}
+              onClick={() => setInput(action.text)}
               disabled={isLoading || isExecuting}
               className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-xs text-white/50 hover:text-white/80 hover:border-polkadot-pink/30 hover:bg-polkadot-pink/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
