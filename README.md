@@ -104,7 +104,7 @@ The app connects to already deployed contracts on Polkadot Hub TestNet — no lo
 ### 4. Run Tests
 
 ```bash
-# Contract tests (46 tests)
+# Contract tests (48 tests)
 cd contracts
 forge install
 forge test -vvv
@@ -258,7 +258,7 @@ Tokens are OZ ERC20 with restricted minting (`onlyOwner`), burn support, and **E
 
 ### Test Coverage
 
-46 Foundry tests verify the full integration, including 9 OZ-specific tests:
+48 Foundry tests verify the full integration, including 11 OZ-specific tests:
 
 | Test | Verifies |
 |------|----------|
@@ -271,12 +271,14 @@ Tokens are OZ ERC20 with restricted minting (`onlyOwner`), burn support, and **E
 | `test_swapWithPermit_expired_deadline` | `ERC20Permit` — expired deadline reverts |
 | `test_swapWithPermit_wrong_signer` | `ERC20Permit` — invalid signature reverts |
 | `test_swapWithPermit_replay_reverts` | `ERC20Permit` — nonce consumed, replay blocked |
+| `test_transferWithPermit_happy_path` | `ERC20Permit` — full permit→transfer in one tx, no prior approve |
+| `test_transferWithPermit_expired_deadline` | `ERC20Permit` — expired deadline reverts for transfers |
 
 ## Smart Contracts
 
 | Contract | Description |
 |----------|-------------|
-| **IntentExecutor** | Entry point: executeSwap, executeSwapWithPermit, executeTransfer, token whitelist, risk check. OZ Ownable + ReentrancyGuard + Pausable + SafeERC20 + ERC20Permit |
+| **IntentExecutor** | Entry point: executeSwap, executeSwapWithPermit, executeTransfer, executeTransferWithPermit, token whitelist, risk check. OZ Ownable + ReentrancyGuard + Pausable + SafeERC20 + ERC20Permit |
 | **RiskEngine** | Rust/PolkaVM: on-chain risk scoring (price impact, MA20, volatility) |
 | **MockDEX** | Uniswap V2 AMM: addLiquidity, swap, getAmountOut |
 | **MockERC20** | OZ ERC20 + ERC20Burnable + ERC20Permit + Ownable — mintable by owner, gasless approvals (testnet only) |
@@ -317,9 +319,9 @@ Built for **Polkadot Solidity Hackathon 2026** (EVM Smart Contracts + PVM Smart 
 
 ## Tests
 
-- **Contracts:** 46 Foundry tests — swap (9), permit (4), whitelist (5), transfer (4), pausable (4), factory (8), risk engine (11), events
+- **Contracts:** 48 Foundry tests — swap (9), permit (6), whitelist (5), transfer (4), pausable (4), factory (8), risk engine (11), events
 - **Frontend:** 185 Jest tests — intent validation (47), risk scoring (22), preview builder (25), risk display (28), XCM encoder (15), bridge flow (12), integration (12), E2E testnet (24)
-- **Total:** 231 tests (46 contract + 185 frontend/E2E)
+- **Total:** 233 tests (48 contract + 185 frontend/E2E)
 - Run: `cd contracts && forge test -vvv` / `cd frontend && npm test`
 
 ## License
