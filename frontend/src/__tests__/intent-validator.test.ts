@@ -253,6 +253,18 @@ describe("validateParsedIntent — transfer", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects transfer to zero address", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "transfer", token_from: "DOT", token_to: "", amount: 10, recipient: "0x0000000000000000000000000000000000000000" },
+    };
+    const result = validateParsedIntent(input);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.clarification).toContain("zero address");
+    }
+  });
+
   it("rejects transfer with zero amount", () => {
     const input: IntentParseResult = {
       success: true,

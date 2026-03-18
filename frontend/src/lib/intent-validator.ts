@@ -3,6 +3,7 @@ import type { IntentParseResult } from "./types";
 const VALID_TOKENS = ["DOT", "USDT", "USDC", "PAS"];
 const VALID_BRIDGE_DESTINATIONS = ["relay"];
 const ETH_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const MAX_SWAP_AMOUNT = 1_000_000;     // 1M tokens
 const MAX_TRANSFER_AMOUNT = 1_000_000; // 1M tokens
 const MAX_BRIDGE_AMOUNT = 100_000;     // 100K PAS
@@ -108,6 +109,13 @@ function validateTransfer(raw: IntentParseResult, userAddress?: string): IntentP
     return {
       success: false,
       clarification: "Please provide a valid recipient address (0x followed by 40 hex characters). Try: 'Send 50 USDT to 0x1234...'",
+    };
+  }
+
+  if (recipient.toLowerCase() === ZERO_ADDRESS) {
+    return {
+      success: false,
+      clarification: "Cannot send tokens to the zero address (0x0000...0000) — this would burn them permanently.",
     };
   }
 
