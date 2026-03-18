@@ -191,6 +191,26 @@ describe("validateParsedIntent", () => {
     const result = validateParsedIntent(input);
     expect(result.success).toBe(false);
   });
+
+  it("rejects swap amount exceeding max (1,000,000)", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "swap", token_from: "DOT", token_to: "USDT", amount: 1_000_001 },
+    };
+    const result = validateParsedIntent(input);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.clarification).toContain("too large");
+    }
+  });
+
+  it("accepts swap at exactly max amount", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "swap", token_from: "DOT", token_to: "USDT", amount: 1_000_000 },
+    };
+    expect(validateParsedIntent(input).success).toBe(true);
+  });
 });
 
 describe("validateParsedIntent — transfer", () => {
@@ -295,6 +315,26 @@ describe("validateParsedIntent — transfer", () => {
     };
     const result = validateParsedIntent(input, "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     expect(result.success).toBe(true);
+  });
+
+  it("rejects transfer amount exceeding max (1,000,000)", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "transfer", token_from: "DOT", token_to: "", amount: 1_000_001, recipient: "0x1234567890abcdef1234567890abcdef12345678" },
+    };
+    const result = validateParsedIntent(input);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.clarification).toContain("too large");
+    }
+  });
+
+  it("accepts transfer at exactly max amount", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "transfer", token_from: "DOT", token_to: "", amount: 1_000_000, recipient: "0x1234567890abcdef1234567890abcdef12345678" },
+    };
+    expect(validateParsedIntent(input).success).toBe(true);
   });
 });
 
@@ -485,6 +525,26 @@ describe("validateParsedIntent — bridge", () => {
     const input: IntentParseResult = {
       success: true,
       intent: { action: "bridge", token_from: "PAS", token_to: "", amount: 1000, destination_chain: "relay" },
+    };
+    expect(validateParsedIntent(input).success).toBe(true);
+  });
+
+  it("rejects bridge amount exceeding max (100,000)", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "bridge", token_from: "PAS", token_to: "", amount: 100_001, destination_chain: "relay" },
+    };
+    const result = validateParsedIntent(input);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.clarification).toContain("too large");
+    }
+  });
+
+  it("accepts bridge at exactly max amount", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "bridge", token_from: "PAS", token_to: "", amount: 100_000, destination_chain: "relay" },
     };
     expect(validateParsedIntent(input).success).toBe(true);
   });

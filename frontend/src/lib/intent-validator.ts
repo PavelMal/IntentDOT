@@ -3,6 +3,9 @@ import type { IntentParseResult } from "./types";
 const VALID_TOKENS = ["DOT", "USDT", "USDC", "PAS"];
 const VALID_BRIDGE_DESTINATIONS = ["relay"];
 const ETH_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
+const MAX_SWAP_AMOUNT = 1_000_000;     // 1M tokens
+const MAX_TRANSFER_AMOUNT = 1_000_000; // 1M tokens
+const MAX_BRIDGE_AMOUNT = 100_000;     // 100K PAS
 
 /**
  * Validates raw AI parser output and returns a sanitized IntentParseResult.
@@ -73,6 +76,13 @@ function validateSwap(raw: IntentParseResult): IntentParseResult {
     };
   }
 
+  if (amount !== null && amount > MAX_SWAP_AMOUNT) {
+    return {
+      success: false,
+      clarification: `Swap amount too large (max ${MAX_SWAP_AMOUNT.toLocaleString()}). Try a smaller amount.`,
+    };
+  }
+
   if (amount === null) {
     return {
       success: false,
@@ -112,6 +122,13 @@ function validateTransfer(raw: IntentParseResult, userAddress?: string): IntentP
     return {
       success: false,
       clarification: "Amount must be a positive number. Try: 'Send 50 USDT to 0x...'",
+    };
+  }
+
+  if (amount !== null && amount > MAX_TRANSFER_AMOUNT) {
+    return {
+      success: false,
+      clarification: `Transfer amount too large (max ${MAX_TRANSFER_AMOUNT.toLocaleString()}). Try a smaller amount.`,
     };
   }
 
@@ -182,6 +199,13 @@ function validateBridge(raw: IntentParseResult): IntentParseResult {
     return {
       success: false,
       clarification: "Amount must be a positive number. Try: 'Bridge 20 PAS to relay chain'",
+    };
+  }
+
+  if (amount !== null && amount > MAX_BRIDGE_AMOUNT) {
+    return {
+      success: false,
+      clarification: `Bridge amount too large (max ${MAX_BRIDGE_AMOUNT.toLocaleString()} PAS). Try a smaller amount.`,
     };
   }
 
