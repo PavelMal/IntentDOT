@@ -253,6 +253,49 @@ describe("validateParsedIntent — transfer", () => {
       expect(result.clarification).toContain("How much");
     }
   });
+
+  it("rejects self-transfer (same address, exact case)", () => {
+    const userAddr = "0x1234567890abcdef1234567890abcdef12345678";
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "transfer", token_from: "USDT", token_to: "", amount: 50, recipient: userAddr },
+    };
+    const result = validateParsedIntent(input, userAddr);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.clarification).toContain("own address");
+    }
+  });
+
+  it("rejects self-transfer (case-insensitive)", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "transfer", token_from: "DOT", token_to: "", amount: 10, recipient: "0xABCDEF1234567890ABCDEF1234567890ABCDEF12" },
+    };
+    const result = validateParsedIntent(input, "0xabcdef1234567890abcdef1234567890abcdef12");
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.clarification).toContain("own address");
+    }
+  });
+
+  it("allows transfer when no userAddress provided", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "transfer", token_from: "USDT", token_to: "", amount: 50, recipient: "0x1234567890abcdef1234567890abcdef12345678" },
+    };
+    const result = validateParsedIntent(input);
+    expect(result.success).toBe(true);
+  });
+
+  it("allows transfer to different address", () => {
+    const input: IntentParseResult = {
+      success: true,
+      intent: { action: "transfer", token_from: "USDT", token_to: "", amount: 50, recipient: "0x1234567890abcdef1234567890abcdef12345678" },
+    };
+    const result = validateParsedIntent(input, "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("validateParsedIntent — create_token", () => {

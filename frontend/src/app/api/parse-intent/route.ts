@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     return fail("AI service not configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY.");
   }
 
-  const { message } = await req.json();
+  const { message, userAddress } = await req.json();
 
   const messageError = validateUserMessage(message);
   if (messageError) {
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
     }
 
     const parsed = JSON.parse(jsonMatch[0]) as IntentParseResult;
-    const validated = validateParsedIntent(parsed);
+    const validated = validateParsedIntent(parsed, userAddress);
 
     return NextResponse.json(validated, { status: 200 });
   } catch (error) {

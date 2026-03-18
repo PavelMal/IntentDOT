@@ -6,9 +6,10 @@ const ETH_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/;
 
 /**
  * Validates raw AI parser output and returns a sanitized IntentParseResult.
- * Catches hallucinated tokens, invalid amounts, same-token swaps, missing amounts.
+ * Catches hallucinated tokens, invalid amounts, same-token swaps, self-transfers, missing amounts.
+ * @param userAddress - connected wallet address, used for self-transfer detection
  */
-export function validateParsedIntent(raw: IntentParseResult): IntentParseResult {
+export function validateParsedIntent(raw: IntentParseResult, userAddress?: string): IntentParseResult {
   // If AI returned clarification, pass through
   if (!raw.success) return raw;
 
@@ -19,7 +20,7 @@ export function validateParsedIntent(raw: IntentParseResult): IntentParseResult 
   }
 
   if (action === "transfer") {
-    return validateTransfer(raw);
+    return validateTransfer(raw, userAddress);
   }
 
   if (action === "create_token") {
@@ -82,7 +83,7 @@ function validateSwap(raw: IntentParseResult): IntentParseResult {
   return raw;
 }
 
-function validateTransfer(raw: IntentParseResult): IntentParseResult {
+function validateTransfer(raw: IntentParseResult, userAddress?: string): IntentParseResult {
   if (!raw.success) return raw;
   const { token_from, amount, recipient } = raw.intent;
 
@@ -97,6 +98,13 @@ function validateTransfer(raw: IntentParseResult): IntentParseResult {
     return {
       success: false,
       clarification: "Please provide a valid recipient address (0x followed by 40 hex characters). Try: 'Send 50 USDT to 0x1234...'",
+    };
+  }
+
+  if (userAddress && recipient.toLowerCase() === userAddress.toLowerCase()) {
+    return {
+      success: false,
+      clarification: "Cannot send tokens to your own address. Please provide a different recipient.",
     };
   }
 

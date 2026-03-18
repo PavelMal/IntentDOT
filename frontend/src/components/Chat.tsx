@@ -253,7 +253,7 @@ export function Chat({ onTxSuccess }: { onTxSuccess?: () => void } = {}) {
       const res = await fetch("/api/parse-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, userAddress: address }),
       });
 
       const result: IntentParseResult = await res.json();
