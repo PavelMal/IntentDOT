@@ -236,6 +236,24 @@ function validateBridge(raw: IntentParseResult): IntentParseResult {
 }
 
 /**
+ * Common prompt injection patterns.
+ * Matched case-insensitively against user input before it reaches the LLM.
+ */
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|rules?|context)/i,
+  /disregard\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions?|prompts?|rules?)/i,
+  /you\s+are\s+now\s+(a|an|my)\s+/i,
+  /new\s+instructions?:/i,
+  /system\s*:\s*/i,
+  /\bdo\s+not\s+follow\s+(your|the)\s+(rules?|instructions?|guidelines?)/i,
+  /pretend\s+(you\s+are|to\s+be|you're)/i,
+  /act\s+as\s+(a|an|if)\s+/i,
+  /jailbreak/i,
+  /\bDAN\b/,
+  /bypass\s+(your\s+)?(restrictions?|filters?|safety|guardrails?)/i,
+];
+
+/**
  * Validates raw user message before sending to AI.
  * Returns null if valid, or an error IntentParseResult if invalid.
  */
@@ -251,6 +269,13 @@ export function validateUserMessage(message: unknown): IntentParseResult | null 
     return {
       success: false,
       clarification: "Message too long (max 500 characters).",
+    };
+  }
+
+  if (INJECTION_PATTERNS.some((pattern) => pattern.test(message))) {
+    return {
+      success: false,
+      clarification: "Your message looks like a prompt injection attempt. Please describe what you'd like to do with your tokens — e.g. 'Swap 10 DOT to USDT'.",
     };
   }
 
